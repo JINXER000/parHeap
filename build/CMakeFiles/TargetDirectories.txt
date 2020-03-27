@@ -1,0 +1,3 @@
+/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/edit_cache.dir
+/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/rebuild_cache.dir
+/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir
