@@ -5,6 +5,33 @@
 #include <MinHeap.h>
 #include "atomicLock.h"
 
+typedef thrust::device_system_tag device_memspace;
+typedef thrust::host_system_tag host_memspace;
+
+
+template <typename T, typename M>
+struct ptr_type {};
+
+template <typename T>
+struct ptr_type<T, host_memspace> {
+  typedef T* type;
+};
+template <typename T>
+struct ptr_type<T, device_memspace> {
+  typedef thrust::device_ptr<T> type;
+};
+template <typename T, typename M>
+struct vector_type {};
+
+template <typename T>
+struct vector_type<T, host_memspace> {
+  typedef thrust::host_vector<T> type;
+};
+template <typename T>
+struct vector_type<T, device_memspace> {
+  typedef thrust::device_vector<T> type;
+};
+
 template <class Ktype>
 struct __align__(16) VoxBucketItem {
 	Ktype key;
@@ -133,7 +160,7 @@ struct __align__(16) VoxBucketItem {
 
 
 template <class Ktype>
-struct ParBucketHeap
+struct ParBucketHeapBase
 {
 
 	// param for the whole heap
@@ -155,8 +182,8 @@ struct ParBucketHeap
 	int *h_active_signals;
 	int *h_timestamps;
 
-	int *d_bucketCapacityOffsets;
-	int *d_signalCapacityOffsets;
+	int *d_bucketOffsets;
+	int *d_signalOffsets;
 	int* d_priorities;
 	int *d_active_buckets;
 	int *d_active_signals;
@@ -172,7 +199,7 @@ struct ParBucketHeap
 	VoxBucketItem<Ktype> *voxSignals;
 
 	//	BSlevel<Ktype>* bs_levels;
-	ParBucketHeap(int n,int d_=1):d(d_),q(-1)
+	ParBucketHeapBase(int n,int d_=1):d(d_),q(-1)
 	{
 
 		max_level=log(n/d)/log(4)+1;
@@ -209,8 +236,8 @@ struct ParBucketHeap
 	}
 	void levelParamInitD()
 	{
-		CUDA_ALLOC_DEV_MEM(&d_bucketCapacityOffsets,sizeof(int)*max_level);
-		CUDA_ALLOC_DEV_MEM(&d_signalCapacityOffsets,sizeof(int)*max_level);
+		CUDA_ALLOC_DEV_MEM(&d_bucketOffsets,sizeof(int)*max_level);
+		CUDA_ALLOC_DEV_MEM(&d_signalOffsets,sizeof(int)*max_level);
 		CUDA_ALLOC_DEV_MEM(&d_priorities,sizeof(int)*max_level);
 		CUDA_ALLOC_DEV_MEM(&d_active_signals,sizeof(int)*max_level);
 		CUDA_ALLOC_DEV_MEM(&d_active_buckets,sizeof(int)*max_level);
@@ -248,27 +275,27 @@ struct ParBucketHeap
 	{
 
 
-		CUDA_MEMCPY_D2H(h_bucketCapacityOffsets,d_bucketCapacityOffsets,sizeof(int)*max_level);
+		CUDA_MEMCPY_D2H(h_bucketCapacityOffsets,d_bucketOffsets,sizeof(int)*max_level);
 		CUDA_MEMCPY_D2H(h_priorities,d_priorities,sizeof(int)*max_level);
-		CUDA_MEMCPY_D2H(h_signalCapacityOffsets,d_signalCapacityOffsets,sizeof(int)*max_level);
+		CUDA_MEMCPY_D2H(h_signalCapacityOffsets,d_signalOffsets,sizeof(int)*max_level);
 		CUDA_MEMCPY_D2H(h_active_signals,d_active_signals,sizeof(int)*max_level);
 		CUDA_MEMCPY_D2H(h_active_buckets,d_active_buckets,sizeof(int)*max_level);
 		CUDA_MEMCPY_D2H(h_timestamps,d_timestamps,sizeof(int)*max_level);
 	}
 	__host__ void levelParamH2D()
 	{
-		CUDA_MEMCPY_H2D(d_bucketCapacityOffsets,h_bucketCapacityOffsets,sizeof(int)*max_level);
+		CUDA_MEMCPY_H2D(d_bucketOffsets,h_bucketCapacityOffsets,sizeof(int)*max_level);
 		CUDA_MEMCPY_H2D(d_priorities,h_priorities,sizeof(int)*max_level);
-		CUDA_MEMCPY_H2D(d_signalCapacityOffsets,h_signalCapacityOffsets,sizeof(int)*max_level);
+		CUDA_MEMCPY_H2D(d_signalOffsets,h_signalCapacityOffsets,sizeof(int)*max_level);
 		CUDA_MEMCPY_H2D(d_active_signals,h_active_signals,sizeof(int)*max_level);
 		CUDA_MEMCPY_H2D(d_active_buckets,h_active_buckets,sizeof(int)*max_level);
 		CUDA_MEMCPY_H2D(d_timestamps,h_timestamps,sizeof(int)*max_level);
 	}
 	__host__ void levelParamDeinitD()
 	{
-		CUDA_FREE_DEV_MEM(d_bucketCapacityOffsets);
+		CUDA_FREE_DEV_MEM(d_bucketOffsets);
 		CUDA_FREE_DEV_MEM(d_priorities);
-		CUDA_FREE_DEV_MEM(d_signalCapacityOffsets);
+		CUDA_FREE_DEV_MEM(d_signalOffsets);
 		CUDA_FREE_DEV_MEM(d_active_signals);
 		CUDA_FREE_DEV_MEM(d_active_buckets);
 		CUDA_FREE_DEV_MEM(d_timestamps);
@@ -449,17 +476,60 @@ struct ParBucketHeap
 	void fill(int bucketIndex);
 };
 
-__global__
-void test()
+template <class Ktype, class memspace=device_memspace>
+class ParBucketHeap: public ParBucketHeapBase<Ktype>
 {
-	int foo=threadIdx.x;
-}
-__device__ void set()
-{
-	int i;
-	if (threadIdx.x == 0)
-		i=0;
-}
+public:
+	int n,d,q;
+	int max_levels, cuncurrent_levels;
+	typedef ParBucketHeapBase<Ktype> parent_type;
+	typename vector_type<int,memspace>::type locks_shared;
+	typename vector_type<int,memspace>::type times_shared;
+	typename vector_type<int,memspace>::type priorities_shared;
+	typename vector_type<int,memspace>::type sigSizes_shared;
+	typename vector_type<int,memspace>::type bucSizes_shared;
+	typename vector_type<int,memspace>::type sigOffsets_shared;
+	typename vector_type<int,memspace>::type bucOffsets_shared;
+	typename vector_type<VoxBucketItem<Ktype>,memspace>::type buckets_shared;
+	typename vector_type<VoxBucketItem<Ktype>,memspace>::type signals_shared;
 
+	ParBucketHeap(int n_,int d_=1):n(n_),d(d_),q(-1),
+			max_levels(log(n/d)/log(4)+1),cuncurrent_levels(ceil(1.0f*max_levels/2)),
+			parent_type(n,d),locks_shared(cuncurrent_levels),
+			times_shared(max_levels),priorities_shared(max_levels),
+			sigSizes_shared(max_levels),bucSizes_shared(max_levels),
+			sigOffsets_shared(max_levels),bucOffsets_shared(max_levels)
+	{
+// consider use thrust::prefixsum..
+		thrust::sequence(locks_shared.begin(),locks_shared.end(),0);
+		thrust::sequence(times_shared.begin(),times_shared.end(),0);
+		thrust::sequence(priorities_shared.begin(),priorities_shared.end(),0);
+		thrust::sequence(sigSizes_shared.begin(),sigSizes_shared.end(),0);
+		thrust::sequence(bucSizes_shared.begin(),bucSizes_shared.end(),0);
+		bucOffsets_shared[0]=0;
+		sigOffsets_shared[0]=0;
+		for(int lv=1;lv<max_levels;lv++)
+		{
+				//			int bucketCapacity = d*pow(2, (2*id+1));     // Bi
+				//			int signalCapacity = d*pow(2, (2*id)); // Si+1
+				bucOffsets_shared[lv]=bucOffsets_shared[lv-1]+d*pow(2, (2*lv-1));
+				sigOffsets_shared[lv]=sigOffsets_shared[lv-1]+d*pow(2, (2*lv-2));
+
+		}
+
+		using thrust::raw_pointer_cast;
+		this->d_locks=raw_pointer_cast(&locks_shared[0]);
+		this->d_timestamps=raw_pointer_cast(&times_shared[0]);
+		this->d_priorities=raw_pointer_cast(&priorities_shared[0]);
+		this->d_active_signals=raw_pointer_cast(&sigSizes_shared[0]);
+		this->d_active_buckets=raw_pointer_cast(&bucSizes_shared[0]);
+		this->d_bucketOffsets=raw_pointer_cast(&bucOffsets_shared[0]);
+		this->d_signalOffsets=raw_pointer_cast(&sigOffsets_shared[0]);
+
+
+	}
+
+
+};
 
 

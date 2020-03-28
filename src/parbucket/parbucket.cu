@@ -3,7 +3,7 @@
 
 template <class Ktype>
 __global__
-void BH_iter(ParBucketHeap<Ktype> bh,int* test_vec)
+void BH_iter(ParBucketHeapBase<Ktype> bh,int* test_vec)
 {
 	int level=blockIdx.x;
 	int thid=threadIdx.x;
@@ -24,7 +24,7 @@ int parDijkstra()
 	int nodes=16;
 
 	ParBucketHeap<int3> bh(nodes,1);
-	bh.creadAllMem();
+//	bh.creadAllMem();
 	thrust::device_vector<int> d_test_vec(3);
 	int block_size=1;
 	int grid_size=bh.max_level;
@@ -40,7 +40,7 @@ int parDijkstra()
 		std::cout<<h_test_vec[i]<<std::endl;
 
 	}
-	bh.deleteAllMem();
+//	bh.deleteAllMem();
     return 0;
 }
 
