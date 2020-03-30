@@ -47,4 +47,31 @@ static void hdlCudaErr(cudaError err, const char* const func, const char* const 
 #define CUDA_FREE_DEV_MEM(devPtr) hdlCudaErr(cudaFree(devPtr), __FUNCTION__, __FILE__, __LINE__)
 #define CUDA_DEV_MEMSET(devPtr,value,count) hdlCudaErr(cudaMemset(devPtr,value,count), __FUNCTION__, __FILE__, __LINE__)
 
+typedef thrust::device_system_tag device_memspace;
+typedef thrust::host_system_tag host_memspace;
+
+
+template <typename T, typename M>
+struct ptr_type {};
+
+template <typename T>
+struct ptr_type<T, host_memspace> {
+  typedef T* type;
+};
+template <typename T>
+struct ptr_type<T, device_memspace> {
+  typedef thrust::device_ptr<T> type;
+};
+template <typename T, typename M>
+struct vector_type {};
+
+template <typename T>
+struct vector_type<T, host_memspace> {
+  typedef thrust::host_vector<T> type;
+};
+template <typename T>
+struct vector_type<T, device_memspace> {
+  typedef thrust::device_vector<T> type;
+};
+
 #endif // CUDA_UTILS_H

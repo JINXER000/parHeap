@@ -5,37 +5,23 @@
 #include <MinHeap.h>
 #include "atomicLock.h"
 
-typedef thrust::device_system_tag device_memspace;
-typedef thrust::host_system_tag host_memspace;
 
-
-template <typename T, typename M>
-struct ptr_type {};
-
-template <typename T>
-struct ptr_type<T, host_memspace> {
-  typedef T* type;
-};
-template <typename T>
-struct ptr_type<T, device_memspace> {
-  typedef thrust::device_ptr<T> type;
-};
-template <typename T, typename M>
-struct vector_type {};
-
-template <typename T>
-struct vector_type<T, host_memspace> {
-  typedef thrust::host_vector<T> type;
-};
-template <typename T>
-struct vector_type<T, device_memspace> {
-  typedef thrust::device_vector<T> type;
-};
 
 template <class Ktype>
 struct __align__(16) VoxBucketItem {
 	Ktype key;
 	int priority;
+//	__device__ __host__
+//	VoxBucketItem(Ktype k,int p):key(k),priority(p)
+//	{
+//
+//	}
+	__device__ __host__
+	void setVal(Ktype k,int p)
+	{
+		key=k;
+		priority=p;
+	}
 };
 
 
@@ -144,16 +130,7 @@ struct __align__(16) VoxBucketItem {
 //	{
 //
 //	}
-//	__device__
-//	void IncStamp()
-//	{
-//		d_timestamp[0]++;
-//	}
-//	__device__ int getTimeStamp()
-//	{
-//		int ts=d_timestamp[0];
-//		return ts;
-//	}
+
 //
 //
 //};
@@ -165,22 +142,11 @@ struct ParBucketHeapBase
 
 	// param for the whole heap
 	int q; // largest non-empty level of Bi
-	int max_level;// maximum level size
 	int d; //bulk size
-
-	int *d_q; // largest non-empty level of Bi
-	int *d_max_level;// maximum level size
-	int *d_d; //bulk size
 
 	// param for each level
 	// length==levels
 
-	int *h_bucketCapacityOffsets;
-	int *h_signalCapacityOffsets;
-	int* h_priorities;
-	int *h_active_buckets;
-	int *h_active_signals;
-	int *h_timestamps;
 
 	int *d_bucketOffsets;
 	int *d_signalOffsets;
@@ -202,140 +168,85 @@ struct ParBucketHeapBase
 	ParBucketHeapBase(int n,int d_=1):d(d_),q(-1)
 	{
 
-		max_level=log(n/d)/log(4)+1;
-		//		for(int i=0;i<max_level;i++)
-		//		{
-		//			new (&bs_levels[i]) BSlevel<Ktype>(i,d);
-		//		}
-
-
-
 	}
 
-	void creadAllMem()
-	{
-		int cuncurrent_levels=ceil(1.0f*max_level/2);
-		CUDA_ALLOC_DEV_MEM(&d_locks,sizeof(int)*cuncurrent_levels);
-		CUDA_ALLOC_DEV_MEM(&d_mem,sizeof(int)*cuncurrent_levels);
-		CUDA_DEV_MEMSET(d_mem,0,sizeof(int)*cuncurrent_levels);
-		param_initD();
-		param_H2D();
-		levelParamInitD();
-		levelParamH2D();
-
-
-	}
-	void deleteAllMem()
-	{
-		//		delete [] bs_levels;
-
-		CUDA_FREE_DEV_MEM(d_mem);
-		param_deinitD();
-		levelParamDeinitD();
-		CUDA_FREE_DEV_MEM(d_locks);
-	}
-	void levelParamInitD()
-	{
-		CUDA_ALLOC_DEV_MEM(&d_bucketOffsets,sizeof(int)*max_level);
-		CUDA_ALLOC_DEV_MEM(&d_signalOffsets,sizeof(int)*max_level);
-		CUDA_ALLOC_DEV_MEM(&d_priorities,sizeof(int)*max_level);
-		CUDA_ALLOC_DEV_MEM(&d_active_signals,sizeof(int)*max_level);
-		CUDA_ALLOC_DEV_MEM(&d_active_buckets,sizeof(int)*max_level);
-		CUDA_ALLOC_DEV_MEM(&d_timestamps,sizeof(int)*max_level);
-
-		h_bucketCapacityOffsets=new int[max_level];
-		h_signalCapacityOffsets=new int[max_level];
-		h_priorities=new int[max_level];
-		h_active_signals=new int[max_level];
-		h_active_buckets=new int[max_level];
-		h_timestamps=new int[max_level];
-
-		h_bucketCapacityOffsets[0]=0;
-		h_signalCapacityOffsets[0]=0;
-		for(int lv=0;lv<max_level;lv++)
+	__device__ VoxBucketItem<Ktype> *getBucItem(int lv,int id)
 		{
-			h_priorities[lv]=0;
-			h_timestamps[lv]=0;
-			h_active_buckets[lv]=0;
-			h_active_signals[lv]=0;
+			int glbId=d_bucketOffsets[lv]+id;
+			return &(voxBuckets[glbId]);
+		}
 
+	__device__ VoxBucketItem<Ktype> *getSigItem(int lv,int id)
+		{
+			int glbId=d_signalOffsets[lv]+id;
+			return &(voxSignals[glbId]);
+		}
 
-			if(lv>0)
+	__device__ int update(VoxBucketItem<Ktype> *eInPtr)
+	{
+		if(d_active_signals[0]>0)
+		{
+			printf("update precondition not met!");
+			assert(false);
+			return -1;
+		}
+		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
+		S0->setVal(eInPtr->key,eInPtr->priority);
+		d_active_signals[0]++;
+		return 0;
+	}
+	__device__ int  findMin()
+		{
+		// TODO reduce
+		int sz=2*d;
+		int minPriority=INT_MAX;
+		int idOut=0;
+		for(int i=0;i<sz;i++)
+		{
+			VoxBucketItem<Ktype>* elem=getBucItem(0,i);
+			if(elem->priority<minPriority)
 			{
-				//			int bucketCapacity = d*pow(2, (2*id+1));     // Bi
-				//			int signalCapacity = d*pow(2, (2*id)); // Si+1
-				h_bucketCapacityOffsets[lv]=h_bucketCapacityOffsets[lv-1]+d*pow(2, (2*lv-1));
-				h_signalCapacityOffsets[lv]=h_signalCapacityOffsets[lv-1]+d*pow(2, (2*lv-2));
+				minPriority=elem->priority;
+				idOut=i;
 			}
-
+		}
+		return idOut;
 
 		}
-	}
-	__host__ void levelParamD2H()
+	__device__ int  extractMin(VoxBucketItem<Ktype> &eOut)
 	{
+		if(d_active_buckets[0]<d || q<=0  )
+		{
+			printf("extractMin precondition 1 not met!");
+			return -1;
+		}
+		if(d_active_signals[0]!=0)
+		{
+			printf("extractMin precondition 2 not met!");
+			return -2;
+		}
 
+//		VoxBucketItem<Ktype> eOut;
+		int idOut=findMin();
+		VoxBucketItem<Ktype>* eOutPtr=getBucItem(0,idOut);
 
-		CUDA_MEMCPY_D2H(h_bucketCapacityOffsets,d_bucketOffsets,sizeof(int)*max_level);
-		CUDA_MEMCPY_D2H(h_priorities,d_priorities,sizeof(int)*max_level);
-		CUDA_MEMCPY_D2H(h_signalCapacityOffsets,d_signalOffsets,sizeof(int)*max_level);
-		CUDA_MEMCPY_D2H(h_active_signals,d_active_signals,sizeof(int)*max_level);
-		CUDA_MEMCPY_D2H(h_active_buckets,d_active_buckets,sizeof(int)*max_level);
-		CUDA_MEMCPY_D2H(h_timestamps,d_timestamps,sizeof(int)*max_level);
-	}
-	__host__ void levelParamH2D()
-	{
-		CUDA_MEMCPY_H2D(d_bucketOffsets,h_bucketCapacityOffsets,sizeof(int)*max_level);
-		CUDA_MEMCPY_H2D(d_priorities,h_priorities,sizeof(int)*max_level);
-		CUDA_MEMCPY_H2D(d_signalOffsets,h_signalCapacityOffsets,sizeof(int)*max_level);
-		CUDA_MEMCPY_H2D(d_active_signals,h_active_signals,sizeof(int)*max_level);
-		CUDA_MEMCPY_H2D(d_active_buckets,h_active_buckets,sizeof(int)*max_level);
-		CUDA_MEMCPY_H2D(d_timestamps,h_timestamps,sizeof(int)*max_level);
-	}
-	__host__ void levelParamDeinitD()
-	{
-		CUDA_FREE_DEV_MEM(d_bucketOffsets);
-		CUDA_FREE_DEV_MEM(d_priorities);
-		CUDA_FREE_DEV_MEM(d_signalOffsets);
-		CUDA_FREE_DEV_MEM(d_active_signals);
-		CUDA_FREE_DEV_MEM(d_active_buckets);
-		CUDA_FREE_DEV_MEM(d_timestamps);
+		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
+		S0->setVal(eOutPtr->key,-1 );
+		d_active_signals[0]++;
 
-		delete [] h_bucketCapacityOffsets;
-		delete [] h_signalCapacityOffsets;
-		delete [] h_priorities;
-		delete [] h_active_signals;
-		delete [] h_active_buckets;
-		delete [] h_timestamps;
+		eOut.setVal(eOutPtr->key,eOutPtr->priority);
+		removeElemB(0,idOut);
+		return 0;
 	}
-	__host__
-	void param_initD()
+
+	__device__ void removeElemB(int lv,int id)
 	{
-		CUDA_ALLOC_DEV_MEM(&d_q,sizeof(int));
-		CUDA_ALLOC_DEV_MEM(&d_max_level,sizeof(int));
-		CUDA_ALLOC_DEV_MEM(&d_d,sizeof(int));
+		VoxBucketItem<Ktype>* toRemove=getBucItem(lv,id);
+		toRemove->key=0;
+		toRemove->priority=0;
+		d_active_buckets--;
 	}
-	__host__
-	void param_H2D()
-	{
-		CUDA_MEMCPY_H2D(d_q,&q,sizeof(int));
-		CUDA_MEMCPY_H2D(d_max_level,&max_level,sizeof(int));
-		CUDA_MEMCPY_H2D(d_d,&d,sizeof(int));
-	}
-	__host__
-	void param_D2H()
-	{
-		CUDA_MEMCPY_D2H(&q,d_q,sizeof(int));
-		CUDA_MEMCPY_D2H(&max_level,d_max_level,sizeof(int));
-		CUDA_MEMCPY_D2H(&d,d_d,sizeof(int));
-	}
-	__host__
-	void param_deinitD()
-	{
-		checkCudaErrors(cudaFree(d_q));
-		//		CUDA_FREE_DEV_MEM(d_q);
-		CUDA_FREE_DEV_MEM(d_max_level);
-		CUDA_FREE_DEV_MEM(d_d);
-	}
+	//delete not implemented yet
 
 	__device__ int getTimeStamp(int level)
 	{
@@ -356,7 +267,7 @@ struct ParBucketHeapBase
 				return false;
 		}
 		// last level
-		if(level==d_q[0]-1)
+		if(level==q-1)
 		{
 			last_cnt=getTimeStamp(level-1);
 			if(last_cnt==4*this_cnt)
@@ -375,6 +286,16 @@ struct ParBucketHeapBase
 	__device__ void IncStamp(int lv)
 	{
 		d_timestamps[lv]++;
+	}
+	__device__
+	void assertNeetRes(int lv)
+	{
+		bool wait=1;
+		do
+		{
+
+		}while(wait);
+
 	}
 	__device__
 	int Resolve(int level)
@@ -480,7 +401,7 @@ template <class Ktype, class memspace=device_memspace>
 class ParBucketHeap: public ParBucketHeapBase<Ktype>
 {
 public:
-	int n,d,q;
+	int nodes,bulkSize,activeLvs;// n.d.q
 	int max_levels, cuncurrent_levels;
 	typedef ParBucketHeapBase<Ktype> parent_type;
 	typename vector_type<int,memspace>::type locks_shared;
@@ -493,12 +414,15 @@ public:
 	typename vector_type<VoxBucketItem<Ktype>,memspace>::type buckets_shared;
 	typename vector_type<VoxBucketItem<Ktype>,memspace>::type signals_shared;
 
-	ParBucketHeap(int n_,int d_=1):n(n_),d(d_),q(-1),
-			max_levels(log(n/d)/log(4)+1),cuncurrent_levels(ceil(1.0f*max_levels/2)),
-			parent_type(n,d),locks_shared(cuncurrent_levels),
+	typename vector_type<int,memspace>::type dbg_shared;
+
+	ParBucketHeap(int n_,int d_=1):nodes(n_),bulkSize(d_),activeLvs(-1),
+			max_levels(log(n_/d_)/log(4)+1),cuncurrent_levels(ceil(1.0f*max_levels/2)),
+			parent_type(n_,d_),locks_shared(cuncurrent_levels),
 			times_shared(max_levels),priorities_shared(max_levels),
 			sigSizes_shared(max_levels),bucSizes_shared(max_levels),
-			sigOffsets_shared(max_levels),bucOffsets_shared(max_levels)
+			sigOffsets_shared(max_levels),bucOffsets_shared(max_levels),
+			dbg_shared(cuncurrent_levels)
 	{
 // consider use thrust::prefixsum..
 		thrust::sequence(locks_shared.begin(),locks_shared.end(),0);
@@ -512,10 +436,14 @@ public:
 		{
 				//			int bucketCapacity = d*pow(2, (2*id+1));     // Bi
 				//			int signalCapacity = d*pow(2, (2*id)); // Si+1
-				bucOffsets_shared[lv]=bucOffsets_shared[lv-1]+d*pow(2, (2*lv-1));
-				sigOffsets_shared[lv]=sigOffsets_shared[lv-1]+d*pow(2, (2*lv-2));
+				bucOffsets_shared[lv]=bucOffsets_shared[lv-1]+bulkSize*pow(2, (2*lv-1));  //lv=1,start from 2
+				sigOffsets_shared[lv]=sigOffsets_shared[lv-1]+bulkSize*pow(2, (2*lv-2));  //lv=1.start from 1
 
 		}
+		int total_bucElems=bucOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels+1));
+		int total_sigElems=sigOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels));
+		buckets_shared.resize(total_bucElems);
+		signals_shared.resize(total_sigElems);
 
 		using thrust::raw_pointer_cast;
 		this->d_locks=raw_pointer_cast(&locks_shared[0]);
@@ -525,6 +453,10 @@ public:
 		this->d_active_buckets=raw_pointer_cast(&bucSizes_shared[0]);
 		this->d_bucketOffsets=raw_pointer_cast(&bucOffsets_shared[0]);
 		this->d_signalOffsets=raw_pointer_cast(&sigOffsets_shared[0]);
+		this->voxBuckets=raw_pointer_cast(&buckets_shared[0]);
+		this->voxSignals=raw_pointer_cast(&signals_shared[0]);
+
+		this->d_mem=raw_pointer_cast(&dbg_shared[0]);
 
 
 	}

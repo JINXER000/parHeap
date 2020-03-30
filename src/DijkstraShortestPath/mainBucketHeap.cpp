@@ -15,6 +15,7 @@ using namespace std::chrono;
 
 
 
+#define USE_GPU
 
 
 int main(){
@@ -34,63 +35,65 @@ int main(){
         std::cerr << "input file not found " << std::endl;
         throw std::runtime_error( "\nAn initialization error happened.\nExiting." );
     }
-    std::vector<initial_vertex> parsedGraph( 0 );
-    numEdges = parse_graph(
-            inputFile,		// Input file.
-            parsedGraph,	// The parsed graph.
-            startVertex,
-            nonDirectedGraph );		// Arbitrary user-provided parameter.
 
-    numVertices= parsedGraph.size();
-
-
-
-    BucketHeap* bucketHeap = new BucketHeap();
-
-    // if the first line of input file specifies num of vertices and edges
-    // std::string line;
-    // char delim[3] = " \t";	//In most benchmarks, the delimiter is usually the space character or the tab character.
-	// char* pch;
-    // std::getline( inputFile, line );
-    // char cstrLine[256];
-    // std::strcpy( cstrLine, line.c_str() );
-
-    // pch = strtok(cstrLine, delim);
-    // numVertices = atoi( pch );
-    // pch = strtok( NULL, delim );
-    // numEdges = atoi( pch );
+    //version2
+//    std::vector<initial_vertex> parsedGraph( 0 );
+//    numEdges = parse_graph(
+//            inputFile,		// Input file.
+//            parsedGraph,	// The parsed graph.
+//            startVertex,
+//            nonDirectedGraph );		// Arbitrary user-provided parameter.
+//
+//    numVertices= parsedGraph.size();
 
 
-    int* distance = new int[numVertices];
-    // list<struct AdjacentNode>* adjList = new list<struct AdjacentNode>[numVertices];
-
-    // int s,v,w;
-    // for (int i = 0 ; i < numEdges ; i++){
-    //     // cin >> s >> v >> w;
-
-    //     if(!std::getline( inputFile, line ))
-    //         break;  
-    //     std::strcpy( cstrLine, line.c_str() );
-
-    //     pch = strtok(cstrLine, delim);
-	// 	if( pch != NULL )
-	// 		s = atoi( pch );
-	// 	else
-	// 		continue;
-	// 	pch = strtok( NULL, delim );
-	// 	if( pch != NULL )
-	// 		v = atoi( pch );
-	// 	else
-	// 		continue;
-    //     pch=strtok( NULL, delim );
-    //     if( pch != NULL )
-	// 		w = atoi( pch );
-    //     adjList[s].push_back({.terminalVertex=v, .weight=w});
-    // }
 
 
-    
+// version 1
+//     if the first line of input file specifies num of vertices and edges
+     std::string line;
+     char delim[3] = " \t";	//In most benchmarks, the delimiter is usually the space character or the tab character.
+	 char* pch;
+     std::getline( inputFile, line );
+     char cstrLine[256];
+     std::strcpy( cstrLine, line.c_str() );
 
+     pch = strtok(cstrLine, delim);
+     numVertices = atoi( pch );
+     pch = strtok( NULL, delim );
+     numEdges = atoi( pch );
+
+     list<struct AdjacentNode>* adjList = new list<struct AdjacentNode>[numVertices];
+
+     int s,v,w;
+     for (int i = 0 ; i < numEdges ; i++){
+         // cin >> s >> v >> w;
+
+         if(!std::getline( inputFile, line ))
+             break;
+         std::strcpy( cstrLine, line.c_str() );
+
+         pch = strtok(cstrLine, delim);
+	 	if( pch != NULL )
+	 		s = atoi( pch );
+	 	else
+	 		continue;
+	 	pch = strtok( NULL, delim );
+	 	if( pch != NULL )
+	 		v = atoi( pch );
+	 	else
+	 		continue;
+         pch=strtok( NULL, delim );
+         if( pch != NULL )
+	 		w = atoi( pch );
+         adjList[s].push_back({.terminalVertex=v, .weight=w});
+     }
+
+
+//  int* distance = new int[numVertices];
+     std::vector<int> distance(numVertices);
+#ifndef USE_GPU
+  BucketHeap* bucketHeap = new BucketHeap();
     auto start = high_resolution_clock::now();
     for (int i = 0 ; i < numVertices ; i++) {
         if (i == startVertex){
@@ -106,28 +109,51 @@ int main(){
         currentVertex = bucketHeap->deleteMin();
 
         if (currentVertex.key == destination) break;
-
-        // for (struct AdjacentNode n : adjList[currentVertex.key]) {
-        //     if (distance[n.terminalVertex] > currentVertex.priority + n.weight) {
-        //         distance[n.terminalVertex] = currentVertex.priority + n.weight;
-        //         bucketHeap->update(n.terminalVertex, distance[n.terminalVertex]);
-        //     }
-        // }
-
-        for(struct neighbor n: parsedGraph.at(currentVertex.key).nbrs)
-        {
-            if(distance[n.dstIndex]>currentVertex.priority+n.weight)
-            {
-                distance[n.dstIndex]=currentVertex.priority+n.weight;
-                bucketHeap->update(n.dstIndex, distance[n.dstIndex]);
-            }
-        }
+// version 1
+         for (struct AdjacentNode n : adjList[currentVertex.key]) {
+             if (distance[n.terminalVertex] > currentVertex.priority + n.weight) {
+                 distance[n.terminalVertex] = currentVertex.priority + n.weight;
+                 bucketHeap->update(n.terminalVertex, distance[n.terminalVertex]);
+             }
+         }
+// version 2
+//        for(struct neighbor n: parsedGraph.at(currentVertex.key).nbrs)
+//        {
+//            if(distance[n.dstIndex]>currentVertex.priority+n.weight)
+//            {
+//                distance[n.dstIndex]=currentVertex.priority+n.weight;
+//                bucketHeap->update(n.dstIndex, distance[n.dstIndex]);
+//            }
+//        }
     }
     cout << distance[destination] << endl;
 
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << duration.count() << endl;
-    parDijkstra();
+#else
+
+    std::vector<int> srcNode;
+    for (int i = 0 ; i < numVertices ; i++) {
+        if (i == startVertex){
+        	srcNode.push_back(i);
+            distance[i] = 0;
+        }
+    }
+    Graph<AdjacentNode> cuGraph;
+    cuGraph.numEdges=numEdges;
+    cuGraph.numVertices=numVertices;
+    for (int i = 0; i < numVertices; i++) {
+    	cuGraph.edgesOffset.push_back(cuGraph.adjacencyList.size());
+    	cuGraph.edgesSize.push_back(adjList[i].size());
+        for (auto &edge: adjList[i]) {
+        	cuGraph.adjacencyList.push_back(edge);
+        }
+    }
+
+
+    parDijkstra(srcNode,cuGraph,distance);
+
+#endif
     return 0;
 }
