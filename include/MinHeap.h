@@ -16,6 +16,7 @@ using namespace std;
 #define BOGUS_PRIORITY -46
 
 class Signal {
+public:
     int signalType;
     int key;
     int priority;
@@ -40,6 +41,7 @@ public:
     void setSignalType(int sigType){signalType = sigType;}
 };
 class Signals {
+public:
     Signal *signals;
     int capacity;
     int size;
@@ -104,6 +106,7 @@ struct BucketItem {
 };
 
 class MinHeap {
+public:
     struct BucketItem *harr; // pointer to array of elements in heap
     int capacity; // maximum possible size of min heap
     int heap_size; // Current number of elements in heap

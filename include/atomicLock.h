@@ -56,11 +56,10 @@ struct LockSet {
         return true;
 			}
 		}
-
+		//old == compare ? val : old
     // if not acquired, then we should switch it to LOCKED
 		// try to write
-		// the attempt invalidates ALL read locks -- because
-		// a writer is already going to change the values
+		// the attempt invalidates ALL read locks -- because a writer is already going to change the values
 		int result = atomicCAS(&lock, (int)CLS_FREE, (int)CLS_LOCKED);
 
 		if (result == CLS_LOCKED) { // failed to acquire

@@ -11,11 +11,6 @@ template <class Ktype>
 struct __align__(16) VoxBucketItem {
 	Ktype key;
 	int priority;
-//	__device__ __host__
-//	VoxBucketItem(Ktype k,int p):key(k),priority(p)
-//	{
-//
-//	}
 	__device__ __host__
 	void setVal(Ktype k,int p)
 	{
@@ -25,123 +20,14 @@ struct __align__(16) VoxBucketItem {
 };
 
 
-
-//template <class Ktype>
-//struct BSlevel
-//{
-//	VoxBucketItem<Ktype> *voxBuckets;
-//	VoxBucketItem<Ktype> *voxSignals;
-//	//    thrust::device_vector<VoxBucketItem<Ktype>> vecBuckets;
-//	//    thrust::device_vector<VoxBucketItem<Ktype>> vecSignals;
-//
-//	int bucketIndex;
-//	int bucketCapacity,active_buckets;
-//	int signalCapacity,active_signals;
-//	int timestamp;
-//
-//	int *d_bucketIndex;
-//	int *d_bucketCapacity,*d_active_buckets;
-//	int *d_signalCapacity,*d_active_signals;
-//	int *d_timestamp;
-//
-//
-//	BSlevel(int id,int d):bucketIndex(id),timestamp(0)
-//	{
-//		bucketCapacity = d*pow(2, (2*id+1));     // Bi
-//		signalCapacity = d*pow(2, (2*id)); // Si+1
-//		active_buckets=0;
-//		active_signals=0;
-//		//        vecBuckets.resize(bucketCapacity);
-//		//        vecSignals.resize(signalCapacity);
-//		int bucket_size=sizeof(VoxBucketItem<Ktype>)*bucketCapacity;
-//		CUDA_ALLOC_DEV_MEM(&voxBuckets,bucket_size);
-//		int siganl_size=sizeof(VoxBucketItem<Ktype>)*signalCapacity;
-//		CUDA_ALLOC_DEV_MEM(&voxSignals,siganl_size);
-//
-//
-//		param_initD();
-//		param_H2D();
-////		IncStamp();
-//
-//	}
-//	~BSlevel()
-//	{
-//		CUDA_FREE_DEV_MEM(voxBuckets);
-//		CUDA_FREE_DEV_MEM(voxSignals);
-//		param_deinitD();
-//	}
-//	__host__
-//	void param_initD()
-//	{
-//		CUDA_ALLOC_DEV_MEM(&d_bucketIndex,sizeof(int));
-//		CUDA_ALLOC_DEV_MEM(&d_bucketCapacity,sizeof(int));
-//		CUDA_ALLOC_DEV_MEM(&d_active_buckets,sizeof(int));
-//		CUDA_ALLOC_DEV_MEM(&d_signalCapacity,sizeof(int));
-//		CUDA_ALLOC_DEV_MEM(&d_active_signals,sizeof(int));
-//		CUDA_ALLOC_DEV_MEM(&d_timestamp,sizeof(int));
-//	}
-//	__host__
-//	void param_H2D()
-//	{
-//		CUDA_MEMCPY_H2D(d_bucketIndex,&bucketIndex,sizeof(int));
-//		CUDA_MEMCPY_H2D(d_bucketCapacity,&bucketCapacity,sizeof(int));
-//		CUDA_MEMCPY_H2D(d_active_buckets,&active_buckets,sizeof(int));
-//		CUDA_MEMCPY_H2D(d_signalCapacity,&signalCapacity,sizeof(int));
-//		CUDA_MEMCPY_H2D(d_active_signals,&active_signals,sizeof(int));
-//		CUDA_MEMCPY_H2D(d_timestamp,&timestamp,sizeof(int));
-//	}
-//	__host__
-//	void param_D2H()
-//	{
-//		CUDA_MEMCPY_D2H(&bucketIndex,d_bucketIndex,sizeof(int));
-//		CUDA_MEMCPY_D2H(&bucketCapacity,d_bucketCapacity,sizeof(int));
-//		CUDA_MEMCPY_D2H(&active_buckets,d_active_buckets,sizeof(int));
-//		CUDA_MEMCPY_D2H(&signalCapacity,d_signalCapacity,sizeof(int));
-//		CUDA_MEMCPY_D2H(&active_signals,d_active_signals,sizeof(int));
-//		CUDA_MEMCPY_D2H(&timestamp,d_timestamp,sizeof(int));
-//	}
-//	__host__
-//	void param_deinitD()
-//	{
-//		CUDA_FREE_DEV_MEM(d_bucketIndex);
-//		CUDA_FREE_DEV_MEM(d_bucketCapacity);
-//		CUDA_FREE_DEV_MEM(d_active_buckets);
-//		CUDA_FREE_DEV_MEM(d_signalCapacity);
-//		CUDA_FREE_DEV_MEM(d_active_signals);
-//		CUDA_FREE_DEV_MEM(d_timestamp);
-//	}
-//	__device__
-//	void insertKey(Ktype k, int p)
-//	{
-//
-//	}
-//	__device__
-//	void Merge(bool output_Bi,VoxBucketItem<Ktype>* harr1,VoxBucketItem<Ktype>* harr2)
-//	{
-//
-//	}
-//	__device__
-//	void clearS()
-//	{
-//
-//	}
-//	__device__
-//	void DelDupB()
-//	{
-//
-//	}
-
-//
-//
-//};
-
+// TODO: to make it fully coalese, alloc mem as: S1, B1, S2, B2, ..., Bq, Sq+1.
 
 template <class Ktype>
 struct ParBucketHeapBase
 {
 
 	// param for the whole heap
-	int q; // largest non-empty level of Bi
+	int *q; // largest non-empty level of Bi
 	int d; //bulk size
 
 	// param for each level
@@ -165,25 +51,30 @@ struct ParBucketHeapBase
 	VoxBucketItem<Ktype> *voxSignals;
 
 	//	BSlevel<Ktype>* bs_levels;
-	ParBucketHeapBase(int n,int d_=1):d(d_),q(-1)
+	ParBucketHeapBase(int n,int d_=1):d(d_)
 	{
 
 	}
 
 	__device__ VoxBucketItem<Ktype> *getBucItem(int lv,int id)
-		{
-			int glbId=d_bucketOffsets[lv]+id;
-			return &(voxBuckets[glbId]);
-		}
+						{
+		int glbId=d_bucketOffsets[lv]+id;
+		return &(voxBuckets[glbId]);
+						}
 
 	__device__ VoxBucketItem<Ktype> *getSigItem(int lv,int id)
-		{
-			int glbId=d_signalOffsets[lv]+id;
-			return &(voxSignals[glbId]);
-		}
+						{
+		int glbId=d_signalOffsets[lv]+id;
+		return &(voxSignals[glbId]);
+						}
+
 
 	__device__ int update(VoxBucketItem<Ktype> *eInPtr)
 	{
+		if(!metConstrain(0))
+			return -1;
+
+
 		if(d_active_signals[0]>0)
 		{
 			printf("update precondition not met!");
@@ -196,12 +87,11 @@ struct ParBucketHeapBase
 		return 0;
 	}
 	__device__ int  findMin()
-		{
+	{
 		// TODO reduce
-		int sz=2*d;
 		int minPriority=INT_MAX;
 		int idOut=0;
-		for(int i=0;i<sz;i++)
+		for(int i=0;i<d_active_buckets[0];i++)
 		{
 			VoxBucketItem<Ktype>* elem=getBucItem(0,i);
 			if(elem->priority<minPriority)
@@ -212,10 +102,14 @@ struct ParBucketHeapBase
 		}
 		return idOut;
 
-		}
+	}
 	__device__ int  extractMin(VoxBucketItem<Ktype> &eOut)
 	{
-		if(d_active_buckets[0]<d || q<=0  )
+		if(!metConstrain(0))
+			return -1;
+
+
+		if(d_active_buckets[0]<d || *q<0  )
 		{
 			printf("extractMin precondition 1 not met!");
 			return -1;
@@ -226,13 +120,13 @@ struct ParBucketHeapBase
 			return -2;
 		}
 
-//		VoxBucketItem<Ktype> eOut;
+		//		VoxBucketItem<Ktype> eOut;
 		int idOut=findMin();
 		VoxBucketItem<Ktype>* eOutPtr=getBucItem(0,idOut);
 
-		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
-		S0->setVal(eOutPtr->key,-1 );
-		d_active_signals[0]++;
+//		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
+//		S0->setVal(eOutPtr->key,-1 );
+//		d_active_signals[0]++;
 
 		eOut.setVal(eOutPtr->key,eOutPtr->priority);
 		removeElemB(0,idOut);
@@ -241,10 +135,12 @@ struct ParBucketHeapBase
 
 	__device__ void removeElemB(int lv,int id)
 	{
-		VoxBucketItem<Ktype>* toRemove=getBucItem(lv,id);
-		toRemove->key=0;
-		toRemove->priority=0;
-		d_active_buckets--;
+		VoxBucketItem<Ktype>* Bi=getBucItem(lv,0);
+		for(int i=id;i<d_active_buckets[lv];i++)
+		{
+			Bi[i].setVal(Bi[i+1].key,Bi[i+1].priority);
+		}
+		d_active_buckets[lv]--;
 	}
 	//delete not implemented yet
 
@@ -257,54 +153,143 @@ struct ParBucketHeapBase
 	{
 		int this_cnt,last_cnt,next_cnt;
 		this_cnt=getTimeStamp(level);
+		if(level>*q)
+		{
+			return false;
+			//			assert(false);
+		}
 		// 1st level
 		if(level==0)
 		{
 			next_cnt=getTimeStamp(level+1);
-			if(next_cnt>=4*this_cnt)
+			if(4*(next_cnt+1)>this_cnt) // if this_cnt++, then not satisfy
 				return true;
 			else
 				return false;
 		}
-		// last level
-		if(level==q-1)
+		//  last level
+		if(level==*q)
 		{
 			last_cnt=getTimeStamp(level-1);
-			if(last_cnt==4*this_cnt)
+			if( last_cnt==4*(this_cnt+1) )
 				return true;
 			else
 				return false;
 		}//else
 		next_cnt=getTimeStamp(level+1);
 		last_cnt=getTimeStamp(level-1);
-		if(last_cnt==4*this_cnt&&next_cnt>=4*this_cnt)
+		if(4*(next_cnt+1)>this_cnt  && last_cnt==4*(this_cnt+1))
 			return true;
 		else
 			return false;
 	}
 
-	__device__ void IncStamp(int lv)
-	{
-		d_timestamps[lv]++;
-	}
+
 	__device__
-	void assertNeetRes(int lv)
+	void ResSerial(int level)
 	{
-		bool wait=1;
-		do
+		///////////////////////
+		//		 empty if needed
+		if(d_active_signals[level]>0)
 		{
 
-		}while(wait);
+			// Bi<-merge(Si,Bi)
+			VoxBucketItem<Ktype>* Bi=getBucItem(level,0);
+			VoxBucketItem<Ktype>* Si=getSigItem(level,0);
 
+			Merge(Si,Bi,d_active_signals[level],d_active_buckets[level]);
+			clearS(Si,d_active_signals[level]);
+			DelDupOnBucket(level);
+
+			int p_i_old=getMaxPriorityOnBucket(level);  // MAY BE SLOW
+			int num=smallerPonBucket(level,p_i_old);
+			int properSize=pow(2,2*level+1);
+			if(num>properSize)
+			{
+//				if(level==2&&properSize==4)
+//				{
+//					int fuck=d_active_buckets[level];
+//				}
+				// return num actually
+				SelectP(level,properSize,d_priorities[level]);
+				// Bi_dot={e.p>p_i}
+				VoxBucketItem<Ktype>* Bi_dot=getBucItem(level,properSize);
+
+
+				VoxBucketItem<Ktype>* Siplus1=getSigItem(level+1,0);
+				Merge(Bi_dot,Siplus1,d_active_buckets[level]-properSize,d_active_signals[level+1]);
+				// Bi = {e.p<=p_i}
+				d_active_buckets[level]=properSize;
+			}
+			maintainPriorityOn(Bi,level);
+
+
+		}
+		NonEmptyBucketSignal(level);
+		// fill if needed
+		int BiSize=d_active_buckets[level];
+		if(BiSize<pow(2,2*level+1)&&level<*q)// Bi not enough, level is not largest non_empty
+		{
+
+			VoxBucketItem<Ktype>* BiPlus1=getBucItem(level+1,0);
+			VoxBucketItem<Ktype>* SiPlus1=getSigItem(level+1,0);
+
+			Merge(SiPlus1,BiPlus1,d_active_signals[level+1],d_active_buckets[level+1]);
+			clearS(SiPlus1,d_active_signals[level+1]);
+			DelDupOnBucket(level+1);
+			maintainPriorityOn(BiPlus1,level+1);
+
+			int properSize=pow(2,2*level+1)-BiSize;
+
+			int numFill=SelectP(level+1,properSize,d_priorities[level]);
+
+			//BiPlus1_dot=={e in Bi+1,e.p<=pi}
+			VoxBucketItem<Ktype>* BiPlus1_dot=getBucItem(level+1,0);
+			VoxBucketItem<Ktype>* Bi=getBucItem(level,0);
+			Merge(BiPlus1_dot,Bi,numFill,d_active_buckets[level]);
+			maintainPriorityOn(Bi,level);
+			//Biplus1=={e in Bi+1,e.p>pi}
+			d_active_buckets[level+1]-=numFill;
+			VoxBucketItem<Ktype>* Biplus1_tmp=getBucItem(level+1,numFill);
+			moveItem(Biplus1_tmp,BiPlus1,d_active_buckets[level+1]);
+			maintainPriorityOn(BiPlus1,level+1);
+			// Si+1 <---- {e in Bi+1, e.p>pi+1}
+			MoveLargerBack(BiPlus1,SiPlus1,d_priorities[level+1],
+					d_active_buckets[level+1],d_active_signals[level+1]);
+
+
+
+		}
+		//////////// routine
+//		VoxBucketItem<Ktype>* Bi=getBucItem(level,0);
+//		if(level==0)
+//		{
+//			int b1k=Bi[0].key;
+//			int b1k2=Bi[1].key;
+//			if (b1k==24&&b1k2==29)
+//			{
+//				printf("laji");
+//			}
+//		}
+		// maintain the largest non empty level, see report p5
+		NonEmptyBucketSignal(level);
+
+		IncStamp(level);
+		//						if(level>0)
+		//		{
+		//			printf("Level %d ts is %d\n",level,d_timestamps[level]);
+		//		}
 	}
 	__device__
 	int Resolve(int level)
 	{
+		// ??? put it at beginning?
+
 		if(!metConstrain(level))
+		{
 			return -1;
+		}
 
-
-		/////////////////////// test
 		// if locked, wait
 		LockSet<1> lockset;
 		while(!lockset.TryLock(d_locks[level/2]))
@@ -312,52 +297,150 @@ struct ParBucketHeapBase
 			// waiting for adjacent blk
 		}
 
-		for(int i=0;i<100;i++)
-		{
-			// do something on mem
-			d_mem[level/2]++;
-		}
-		int out=d_mem[level/2]*getTimeStamp(level);
-		d_mem[level/2]=0;
 
-		IncStamp(level);
+
+		ResSerial(level);
+
+		//				for(int i=0;i<100;i++)
+		//				{
+		//					// do something on mem
+		//					d_mem[level/2]++;
+		//				}
+		//				int out=d_mem[level/2]*getTimeStamp(level);
+		//				d_mem[level/2]=0;
 		//unlock
 		lockset.Yield(d_locks[level/2]);
 
 
-		return out;
-		///////////////////////
-		// empty if needed
-		//		if(bs_levels[level].d_active_signals[0]==0)
-		//		{
-		//			VoxBucketItem<Ktype>* Si=bs_levels[level].voxSignals;
-		//			VoxBucketItem<Ktype>* Bi=bs_levels[level].voxBuckets;
-		//			bs_levels[level].Merge(true,Bi,Si);
-		//			bs_levels[level].DelDupB();
-		//
-		//			int num=smallerP(level);
-		//			if(num>pow(2,2*level+1))
-		//			{
-		//				d_priorities[level]=SelectP(level);
-		//				VoxBucketItem<Ktype>* Bi_dot=SeprateB(level,d_priorities[level]);
-		//				VoxBucketItem<Ktype>* Siplus1=bs_levels[level+1].voxSignals;
-		//				bs_levels[level+1].Merge(false,Siplus1,Bi_dot);
-		//			}
-		//
-		//
-		//		}
-		//
-		//		// fill if needed
-		//		int BiSize=bs_levels[level].d_active_buckets[0];
-		//		d_q[0]=largest_active_level();
-		//		if(BiSize<pow(2,2*level+1)&&level<d_q[0]-1)// Bi not enough, level is not largest non_empty
-		//		{
-		//
-		//		}
-		return 0;
+		return d_timestamps[level];
 	}
-	//    BucketLine<Ktype>* getIthBucket(int i);
-	//    SignalLine<Ktype>* getIthSignal(int i);
+	__device__
+	void MoveLargerBack(VoxBucketItem<Ktype>* BAddr,VoxBucketItem<Ktype>* SAddr,
+			int pri,int &Bsize,int &Ssize)
+	{
+		int size=Bsize;
+		int j=0;
+		for(int i=0;i<Bsize;i++)
+		{
+			if(BAddr[i].priority>pri)
+			{
+				SAddr[j++].setVal(BAddr[i].key,BAddr[i].priority);
+				size--;
+			}
+		}
+		Bsize=size;
+		Ssize=j;
+	}
+	__device__
+	void moveItem(VoxBucketItem<Ktype>* oldAddr,VoxBucketItem<Ktype>* newAddr, int size)
+	{
+		// assume new is in front of old, or two array without overlap
+		for(int i=0;i<size;i++)
+		{
+			newAddr[i].setVal(oldAddr[i].key,oldAddr[i].priority);
+		}
+	}
+	__device__
+	int getMaxPriorityOnBucket(int lv)
+	{
+		if(lv==*q&&d_active_signals[lv]==0)
+			return INT_MAX;
+		if(d_active_buckets[lv]==0)
+			return INT_MIN;
+
+		VoxBucketItem<Ktype> *Bi=getBucItem(lv,0);
+		int maxPriority=INT_MIN;
+		for (int i = 0; i < d_active_buckets[lv] ; i++ ){
+			if (Bi[i].priority > maxPriority){
+				maxPriority = Bi[i].priority;
+			}
+		}
+		// try below
+		//	    maxPriority=Bi[d_active_buckets[lv]-1].priority;
+		d_priorities[lv]=maxPriority;
+		return maxPriority;
+	}
+	__device__
+	void DelDupOnBucket(int lv)
+	{
+		// identify, delete, compress--- scan and prefix sum
+
+		int &szBi=d_active_buckets[lv];
+		if(szBi<=1)
+			return;
+		VoxBucketItem<Ktype> *Bi=getBucItem(lv,0);
+		int i=0,j=1;
+		while(j<szBi)
+		{
+			if(Bi[i].key!=Bi[j].key)
+			{
+				Bi[++i]=Bi[j++];
+			}else
+			{
+				// same key, remove the one with larger p
+				if(Bi[i].priority>Bi[j].priority)
+					Bi[i].priority=Bi[j].priority;
+				j++;
+
+			}
+		}
+		// new active size of Bi= last idx+1
+		szBi=i+1;
+	}
+	__device__
+	void clearS(VoxBucketItem<Ktype> *Si,int &szSi)
+	{
+		// after modify the sz, all will be trash
+		//		for(int i=0;i<szSi;i++)
+		//		{
+		//			Si[i].setVal(0,0);
+		//		}
+		szSi=0;
+	}
+
+	__device__
+	void Merge(VoxBucketItem<Ktype> *itemIn, VoxBucketItem<Ktype> *itemOut,
+			int szIn,int &szOut)// if needed, please modify zsIn out of the function
+	{
+		// thrust::merge
+		// we assume 2 arrays are sorted
+
+		if(szIn<=0)
+			return;
+		if(szOut<=0)
+		{
+			for(int i=0;i<szIn;i++)
+			{
+				// copy in to out
+				itemOut[i]=itemIn[i];
+			}
+			//modify active size
+			szOut=szIn;
+			return;
+		}
+		int pin=szIn-1, pout=szOut-1;
+		while(pin>=0&&pout>=0)
+		{
+			// sort by p, put the larger one at the very end
+			if(itemOut[pout].priority>itemIn[pin].priority)
+			{
+				itemOut[pout+pin+1]=itemOut[pout];
+				pout--;
+			}else
+			{
+				itemOut[pout+pin+1]=itemIn[pin];
+				pin--;
+			}
+		}
+		while(pin>=0)
+		{
+			itemOut[pout+pin+1]=itemIn[pin];
+			pin--;
+		}
+		//modify active size
+		szOut=szOut+szIn;
+		// cannot set szIn=0.
+	}
 	__device__
 	void bulkUpdate(Ktype k, int p)
 	{
@@ -365,36 +448,92 @@ struct ParBucketHeapBase
 	}
 
 	__device__
-	int smallerP(int level)
+	int smallerPonBucket(int lv,int maxP)
 	{
-		return 0;
-	}
-	__device__
-	int SelectP(int level)
-	{
-		return 0;
-	}
-	__device__
-	VoxBucketItem<Ktype>* SeprateB(int this_level,int p_i)
-	{
-		VoxBucketItem<Ktype>* Bi_dot;
-		return Bi_dot;
-	}
-	__device__
-	int largest_active_level()
-	{
-		return 0;
-	}
-	int getMaxPriorityOnBucket(int i, int q);
+		// count , proposition+prefix sum
+		VoxBucketItem<Ktype>* Bi=getBucItem(lv,0);
+		int num_smaller=0;
+		for(int i=0;i<d_active_buckets[lv];i++)
+		{
+			if(Bi[i].priority>maxP)
+				break;
+			num_smaller++;
+		}
 
-	int getNonEmptyBucketSignalIndex();
+		return num_smaller;
+	}
+	__device__
+	int SelectP(int lv,int smallerNum,int &pi_out)
+	{
+		// since Bi is sorted, NO NEED to quick select??
+		VoxBucketItem<Ktype>* Bi=getBucItem(lv,0);
+//		int acb=d_active_buckets[lv];
+		if(d_active_buckets[lv]<smallerNum)
+		{
+//			int B2k=Bi[d_active_buckets[lv]-1].key;
+			pi_out=Bi[d_active_buckets[lv]-1].priority;
+//			assert(false);
+			return d_active_buckets[lv];
+		}
+		pi_out=Bi[smallerNum-1].priority;
+		return smallerNum;
+	}
+
+	__device__ void IncStamp(int lv)
+	{
+		d_timestamps[lv]++;
+	}
+	__device__
+	void maintainPriorityOn(VoxBucketItem<Ktype>* BucAddr,int lv)
+	{
+		int maxP=BucAddr[d_active_buckets[lv]-1].priority;
+		d_priorities[lv]=maxP;
+	}
+	__device__
+	void NonEmptyBucketSignal(int level)
+	{
+		// reduction
+		int this_sigs=d_active_signals[level];
+		int next_sigs=d_active_signals[level+1];
+		int this_bucs=d_active_buckets[level];
+		int next_bucs=d_active_buckets[level+1];
+
+		if(next_sigs<=0&&next_bucs<=0)
+		{
+			if(*q==level+1)
+			{
+				*q=level;
+			}
+		}else
+		{
+			if(*q<level+1)
+			{
+				*q=level+1;
+			}
+		}
+
+		if(this_sigs<=0&&this_bucs<=0)
+		{
+			if(*q==level)
+			{
+				*q=level-1;
+			}
+		}
+		else
+		{
+			if(*q<level)
+			{
+				*q=level;
+			}
+		}
+
+	}
 
 	void maintainNumBuckets();
-	Ktype deleteMin();
+
 	void deleteItem(Ktype k);
 
-	void empty(int signalIndex);
-	void fill(int bucketIndex);
+
 };
 
 template <class Ktype, class memspace=device_memspace>
@@ -404,6 +543,7 @@ public:
 	int nodes,bulkSize,activeLvs;// n.d.q
 	int max_levels, cuncurrent_levels;
 	typedef ParBucketHeapBase<Ktype> parent_type;
+	typename vector_type<int,memspace>::type activeLVs_shared;
 	typename vector_type<int,memspace>::type locks_shared;
 	typename vector_type<int,memspace>::type times_shared;
 	typename vector_type<int,memspace>::type priorities_shared;
@@ -416,7 +556,7 @@ public:
 
 	typename vector_type<int,memspace>::type dbg_shared;
 
-	ParBucketHeap(int n_,int d_=1):nodes(n_),bulkSize(d_),activeLvs(-1),
+	ParBucketHeap(int n_,int d_=1):nodes(n_),bulkSize(d_),activeLvs(-1),activeLVs_shared(1),
 			max_levels(log(n_/d_)/log(4)+1),cuncurrent_levels(ceil(1.0f*max_levels/2)),
 			parent_type(n_,d_),locks_shared(cuncurrent_levels),
 			times_shared(max_levels),priorities_shared(max_levels),
@@ -424,24 +564,25 @@ public:
 			sigOffsets_shared(max_levels),bucOffsets_shared(max_levels),
 			dbg_shared(cuncurrent_levels)
 	{
-// consider use thrust::prefixsum..
-		thrust::sequence(locks_shared.begin(),locks_shared.end(),0);
-		thrust::sequence(times_shared.begin(),times_shared.end(),0);
-		thrust::sequence(priorities_shared.begin(),priorities_shared.end(),0);
-		thrust::sequence(sigSizes_shared.begin(),sigSizes_shared.end(),0);
-		thrust::sequence(bucSizes_shared.begin(),bucSizes_shared.end(),0);
+		// consider use thrust::prefixsum..
+		thrust::fill(locks_shared.begin(),locks_shared.end(),0);
+		thrust::fill(times_shared.begin(),times_shared.end(),0);
+		thrust::fill(priorities_shared.begin(),priorities_shared.end(),0);
+		thrust::fill(sigSizes_shared.begin(),sigSizes_shared.end(),0);
+		thrust::fill(bucSizes_shared.begin(),bucSizes_shared.end(),0);
 		bucOffsets_shared[0]=0;
 		sigOffsets_shared[0]=0;
 		for(int lv=1;lv<max_levels;lv++)
 		{
-				//			int bucketCapacity = d*pow(2, (2*id+1));     // Bi
-				//			int signalCapacity = d*pow(2, (2*id)); // Si+1
-				bucOffsets_shared[lv]=bucOffsets_shared[lv-1]+bulkSize*pow(2, (2*lv-1));  //lv=1,start from 2
-				sigOffsets_shared[lv]=sigOffsets_shared[lv-1]+bulkSize*pow(2, (2*lv-2));  //lv=1.start from 1
+			//			int bucketCapacity = d*pow(2, (2*id+1));     // Bi
+			//			int signalCapacity = d*pow(2, (2*id)); // Si+1
+			// however, we double the size for Merge()
+			bucOffsets_shared[lv]=bucOffsets_shared[lv-1]+bulkSize*pow(2, (2*lv-1)+1);  //lv=1,start from 2
+			sigOffsets_shared[lv]=sigOffsets_shared[lv-1]+bulkSize*pow(2, (2*lv-2)+1);  //lv=1.start from 1
 
 		}
-		int total_bucElems=bucOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels+1));
-		int total_sigElems=sigOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels));
+		int total_bucElems=bucOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels-1)+1);
+		int total_sigElems=sigOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels-2)+1);
 		buckets_shared.resize(total_bucElems);
 		signals_shared.resize(total_sigElems);
 
@@ -455,8 +596,38 @@ public:
 		this->d_signalOffsets=raw_pointer_cast(&sigOffsets_shared[0]);
 		this->voxBuckets=raw_pointer_cast(&buckets_shared[0]);
 		this->voxSignals=raw_pointer_cast(&signals_shared[0]);
-
+		this->q=raw_pointer_cast(&activeLVs_shared[0]);
 		this->d_mem=raw_pointer_cast(&dbg_shared[0]);
+
+
+	}
+	void printAllItems()
+	{
+		//		CUDA_MEMCPY_D2H(&activeLvs,&(this->q),sizeof(int));
+		activeLvs=activeLVs_shared[0];
+		printf("====max active lv is%d\n",activeLvs);
+
+		for(int lv=0;lv<=activeLvs;lv++)
+		{
+			std::cout<<"S"<<lv<<"\t:";
+			for(int i=0;i<sigSizes_shared[lv];i++)
+			{
+				int itemLoc=sigOffsets_shared[lv]+i;
+				VoxBucketItem<Ktype> item=signals_shared[itemLoc];
+				std::cout<<"("<<item.key<<", "<<item.priority<<")";
+			}
+			std::cout<<std::endl;
+			std::cout<<"B"<<lv<<"\t:";
+			for(int i=0;i<bucSizes_shared[lv];i++)
+			{
+				int itemLoc=bucOffsets_shared[lv]+i;
+				VoxBucketItem<Ktype> item=buckets_shared[itemLoc];
+				std::cout<<"("<<item.key<<", "<<item.priority<<")";
+			}
+			std::cout<<std::endl;
+
+		}
+
 
 
 	}

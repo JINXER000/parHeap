@@ -172,8 +172,9 @@ void swap(struct BucketItem *x, struct BucketItem *y) {
 
 
 void MinHeap::printItems(){
+	cout << "buckets :: ";
     for (int j = 0; j < getSize(); j++){
-        cout<<"("<<harr[j].priority <<"," << harr[j].key<<") ";
+        cout<<"("<<harr[j].key <<"," << harr[j].priority<<") ";
     }
     cout<<endl;
 }

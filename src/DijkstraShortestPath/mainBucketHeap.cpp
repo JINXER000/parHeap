@@ -133,13 +133,7 @@ int main(){
     cout << duration.count() << endl;
 #else
 
-    std::vector<int> srcNode;
-    for (int i = 0 ; i < numVertices ; i++) {
-        if (i == startVertex){
-        	srcNode.push_back(i);
-            distance[i] = 0;
-        }
-    }
+
     Graph<AdjacentNode> cuGraph;
     cuGraph.numEdges=numEdges;
     cuGraph.numVertices=numVertices;
@@ -150,9 +144,22 @@ int main(){
         	cuGraph.adjacencyList.push_back(edge);
         }
     }
-
-
+// GPU test
+    std::vector<int> srcNode;
+//    for (int i = 0 ; i < numVertices ; i++) {
+//        if (i == startVertex){
+//        	srcNode.push_back(i);
+//            distance[i] = 0;
+//        }
+//    }
+    int inputSize=32;
+    for(int i=0;i<inputSize;i++)
+    {
+    	srcNode.push_back(i);
+    }
     parDijkstra(srcNode,cuGraph,distance);
+
+
 
 #endif
     return 0;

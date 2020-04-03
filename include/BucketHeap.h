@@ -44,6 +44,22 @@ public:
     }
     void maintainNumBuckets();
 
+    void printBucketCPU()
+    {
+    	printf("--------\n");
+    	for(int lv=1;lv<=q;lv++)
+    	{
+
+
+			std::cout<<"S"<<lv<<"\t:";
+			Signals* Si = getIthSignal(lv);
+			Si->printItems();
+			std::cout<<"B"<<lv<<"\t:";
+			MinHeap* Bi = getIthBucket(lv);
+			Bi->printItems();
+    	}
+    }
+
 };
 
 
