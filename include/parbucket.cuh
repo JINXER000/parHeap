@@ -30,6 +30,8 @@ struct ParBucketHeapBase
 	int *q; // largest non-empty level of Bi
 	int d; //bulk size
 
+	bool operationOK;
+
 	// param for each level
 	// length==levels
 
@@ -51,7 +53,7 @@ struct ParBucketHeapBase
 	VoxBucketItem<Ktype> *voxSignals;
 
 	//	BSlevel<Ktype>* bs_levels;
-	ParBucketHeapBase(int n,int d_=1):d(d_)
+	ParBucketHeapBase(int n,int d_=1):d(d_),operationOK(0)
 	{
 
 	}
@@ -69,7 +71,7 @@ struct ParBucketHeapBase
 						}
 
 
-	__device__ int update(VoxBucketItem<Ktype> *eInPtr)
+	__device__ int update(VoxBucketItem<Ktype> eInPtr)
 	{
 		if(!metConstrain(0))
 			return -1;
@@ -82,8 +84,9 @@ struct ParBucketHeapBase
 			return -1;
 		}
 		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
-		S0->setVal(eInPtr->key,eInPtr->priority);
+		S0->setVal(eInPtr.key,eInPtr.priority);
 		d_active_signals[0]++;
+		operationOK=true;
 		return 0;
 	}
 	__device__ int  findMin()
@@ -130,6 +133,7 @@ struct ParBucketHeapBase
 
 		eOut.setVal(eOutPtr->key,eOutPtr->priority);
 		removeElemB(0,idOut);
+		operationOK=true;
 		return 0;
 	}
 
@@ -148,6 +152,18 @@ struct ParBucketHeapBase
 	{
 		return d_timestamps[level];
 	}
+//	__device__
+//	bool metConstrain2nd(int level)
+//	{
+//		int this_cnt,last_cnt,next_cnt;
+//		this_cnt=getTimeStamp(level);
+//		if(level>*q)
+//		{
+//			return false;
+//			//			assert(false);
+//		}
+//		if(level>1&&this_cnt)
+//	}
 	__device__
 	bool metConstrain(int level)
 	{
@@ -481,7 +497,13 @@ struct ParBucketHeapBase
 
 	__device__ void IncStamp(int lv)
 	{
+		if(lv==0&&operationOK==false)
+		{
+			// this resolve is for the last operation
+			return;
+		}
 		d_timestamps[lv]++;
+		operationOK=false;
 	}
 	__device__
 	void maintainPriorityOn(VoxBucketItem<Ktype>* BucAddr,int lv)
@@ -605,7 +627,7 @@ public:
 	{
 		//		CUDA_MEMCPY_D2H(&activeLvs,&(this->q),sizeof(int));
 		activeLvs=activeLVs_shared[0];
-		printf("====max active lv is%d\n",activeLvs);
+		printf("====max active lv is%d====\n",activeLvs);
 
 		for(int lv=0;lv<=activeLvs;lv++)
 		{

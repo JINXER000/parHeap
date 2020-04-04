@@ -7,25 +7,57 @@
 
 template <class Ktype>
 __global__
-void BH_insertOnly(ParBucketHeap<Ktype> bh,
-		VoxBucketItem<Ktype>* eInPtr,
-		int* test_vec)
+void BH_insertTest(ParBucketHeap<Ktype> bh,
+		VoxBucketItem<Ktype>* eInVec,
+		VoxBucketItem<Ktype>* eOutVec,
+		int vec_num,bool *finished)
 {
 	const int level=blockIdx.x;
 	const int thid=threadIdx.x;
 
-	// do update
+	// assume push and pop vec_num elems
 
 	if(level==0)
 	{
-		int isFail=bh.update(eInPtr);
-		//resolve
-		test_vec[level]=bh.Resolve(level);
+		for(int i=0;i<vec_num;i++)
+		{
+			int isFail1=0,isFail2=0;
+			do{
 
+				isFail1=bh.update(eInVec[i]);  // can fail because not yet resolved
+				//resolve
+				isFail2=bh.Resolve(level);  // can fail because !metConstrain
+
+			}while(isFail1<0||isFail2<0);
+			// only fail 1, then resolve can address
+			// only fail 2, then 1 will fail as well.
+			// fail both because lv 2 takes too long
+		}
+		for(int i=0;i<vec_num;i++)
+		{
+			int isFail1=0,isFail2=0;
+			do{
+
+				isFail1=bh.extractMin(eOutVec[i]);  // can fail because not yet resolved
+				//resolve
+				isFail2=bh.Resolve(level);  // can fail because !metConstrain
+
+			}while(isFail1<0||isFail2<0);
+			// only fail 1, then resolve can address
+			// only fail 2, then 1 will fail as well.
+			// fail both because lv 2 takes too long
+		}
+		*finished=true;
 	}else
 	{
-		//resolve
-		test_vec[level]=bh.Resolve(level);
+		do
+		{
+			int isFail3=0;
+			//resolve
+			isFail3=bh.Resolve(level);  // can fail because !metConstrain
+
+		}while(!*finished);
+
 	}
 }
 
@@ -48,7 +80,7 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 
 	if(level==0)
 	{
-		VoxBucketItem<Ktype> *eInPtr;
+		VoxBucketItem<Ktype> eIn;
 		//		do
 		//		{
 		for(int is=0;is<inputSize;is++) // is: index of src
@@ -65,8 +97,8 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 				int w=v2u.weight;
 				if(settled[u])
 					continue;
-				eInPtr->setVal(u,p+w);
-				int isFail=bh.update(eInPtr);
+				eIn.setVal(u,p+w);
+				int isFail=bh.update(eIn);
 				//resolve
 				test_vec[level]=bh.Resolve(level);
 			}
@@ -79,7 +111,7 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 		test_vec[level]=bh.Resolve(level);
 
 		// for next round update
-		eInPtr->setVal(eOut.key,eOut.priority);
+		eIn.setVal(eOut.key,eOut.priority);
 		//		}while(bh.q>=0);
 
 
@@ -105,7 +137,7 @@ void BH_insertSerail(ParBucketHeap<Ktype> bh,
 	// do update
 
 
-	int isFail=bh.update(eInPtr);
+	int isFail=bh.update(*eInPtr);
 	//resolve
 	for (int level=0;level<bh.max_levels;level++)
 	{
@@ -147,6 +179,9 @@ void BH_extractSerail(ParBucketHeap<Ktype> bh,
 
 
 }
+
+
+
 int parDijkstra(std::vector<int> &srcNode,
 		Graph<AdjacentNode> &cuGraph,
 		std::vector<int> &distances)
@@ -163,13 +198,7 @@ int parDijkstra(std::vector<int> &srcNode,
 	{
 		h_srcNode[id].setVal(srcNode[id],abs(id%5));
 	}
-	/// for input test
-	//	std::vector<VoxBucketItem<int>> h_srcNode(inputSize);
-	//	thrust::device_vector<VoxBucketItem<int>> d_srcNode(inputSize);
-	//	for(int id=0;id<inputSize;id++)
-	//	{
-	//		h_srcNode[id].setVal(id,(id-inputSize/2)*(id-inputSize/2));
-	//	}item.key
+
 	thrust::copy(h_srcNode.begin(),h_srcNode.end(),d_srcNode.begin());
 
 	thrust::device_vector<int> d_distance(cuGraph.numVertices);
@@ -189,35 +218,49 @@ int parDijkstra(std::vector<int> &srcNode,
 	ParBucketHeap<int> bh(nodes,1);
 	std::cout<<"input sources has "<<inputSize<<std::endl;
 	using thrust::raw_pointer_cast;
-	thrust::device_vector<int> d_test_vec(3);
+	thrust::device_vector<int> d_test_vec(nodes);
 	int block_size=1;
 	int grid_size=bh.max_levels;
 
+	//	for(int i=0;i<inputSize;i++)
+	//	{
+	//
+	//
+	//		BH_insertSerail<int><<<1,1>>>(bh,
+	//				raw_pointer_cast(&d_srcNode[i]),
+	//				raw_pointer_cast(&d_test_vec[0]));
+	//
+	//		//				bh.printAllItems();
+	//		//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
+	//		//	    bucketHeap->printBucketCPU();
+	//	}
+
+	//	int B0Size=bh.bucSizes_shared[0];
+	//	while(B0Size>0)
+	//	{
+	//		BH_extractSerail<int><<<1,1>>>(bh,
+	//				raw_pointer_cast(&d_test_vec[0]));
+	//
+	//		bh.printAllItems();
+	//		int out=d_test_vec[0];
+	//		printf("extracted min is %d \n",out);
+	//		B0Size=bh.bucSizes_shared[0];
+	//	}
+	thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
+	bool *finished;
+	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
+	CUDA_DEV_MEMSET(finished,0,sizeof(int));
+	BH_insertTest<int><<<grid_size,block_size>>>(bh,
+			raw_pointer_cast(&d_srcNode[0]),
+			raw_pointer_cast(&d_outNodes[0]),
+			nodes,finished);
+	CUDA_FREE_DEV_MEM(finished);
+
+	bh.printAllItems();
 	for(int i=0;i<inputSize;i++)
 	{
-		//		BH_insertOnly<int><<<grid_size,block_size>>>(bh,
-		//				raw_pointer_cast(&d_srcNode[i]),
-		//				raw_pointer_cast(&d_test_vec[0]));
-
-		BH_insertSerail<int><<<1,1>>>(bh,
-				raw_pointer_cast(&d_srcNode[i]),
-				raw_pointer_cast(&d_test_vec[0]));
-
-		//				bh.printAllItems();
-		//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
-		//	    bucketHeap->printBucketCPU();
-	}
-	bh.printAllItems();
-	int B0Size=bh.bucSizes_shared[0];
-	while(B0Size>0)
-	{
-		BH_extractSerail<int><<<1,1>>>(bh,
-				raw_pointer_cast(&d_test_vec[0]));
-
-		bh.printAllItems();
-		int out=d_test_vec[0];
-		printf("extracted min is %d \n",out);
-		B0Size=bh.bucSizes_shared[0];
+		VoxBucketItem<int> item=d_outNodes[i];
+		std::cout<<"("<<item.key<<", "<<item.priority<<")";
 	}
 	// TODO perform V rounds
 	//	BH_iter<int><<<grid_size,block_size>>>(bh,
@@ -230,14 +273,14 @@ int parDijkstra(std::vector<int> &srcNode,
 	//			raw_pointer_cast(&d_settled[0]),
 	//			raw_pointer_cast(&d_test_vec[0]));
 
-//	std::vector<int > h_test_vec(3);
-//	thrust::copy(d_test_vec.begin(),d_test_vec.end(),h_test_vec.begin());
-//
-//	for(int i=0;i<3;i++)
-//	{
-//		std::cout<<h_test_vec[i]<<std::endl;
-//
-//	}
+	//	std::vector<int > h_test_vec(3);
+	//	thrust::copy(d_test_vec.begin(),d_test_vec.end(),h_test_vec.begin());
+	//
+	//	for(int i=0;i<3;i++)
+	//	{
+	//		std::cout<<h_test_vec[i]<<std::endl;
+	//
+	//	}
 
 	return 0;
 }
