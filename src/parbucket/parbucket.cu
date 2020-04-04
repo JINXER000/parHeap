@@ -21,31 +21,11 @@ void BH_insertTest(ParBucketHeap<Ktype> bh,
 	{
 		for(int i=0;i<vec_num;i++)
 		{
-			int isFail1=0,isFail2=0;
-			do{
-
-				isFail1=bh.update(eInVec[i]);  // can fail because not yet resolved
-				//resolve
-				isFail2=bh.Resolve(level);  // can fail because !metConstrain
-
-			}while(isFail1<0||isFail2<0);
-			// only fail 1, then resolve can address
-			// only fail 2, then 1 will fail as well.
-			// fail both because lv 2 takes too long
+			bh.updateRes(eInVec[i]);
 		}
 		for(int i=0;i<vec_num;i++)
 		{
-			int isFail1=0,isFail2=0;
-			do{
-
-				isFail1=bh.extractMin(eOutVec[i]);  // can fail because not yet resolved
-				//resolve
-				isFail2=bh.Resolve(level);  // can fail because !metConstrain
-
-			}while(isFail1<0||isFail2<0);
-			// only fail 1, then resolve can address
-			// only fail 2, then 1 will fail as well.
-			// fail both because lv 2 takes too long
+			bh.extractMinRes(eOutVec[i]);
 		}
 		*finished=true;
 	}else
@@ -188,9 +168,8 @@ int parDijkstra(std::vector<int> &srcNode,
 {
 
 
-	BucketHeap* bucketHeap = new BucketHeap();
 
-	// initCudaGraph
+	///  initCudaGraph
 	int inputSize=srcNode.size();
 	std::vector<VoxBucketItem<int>> h_srcNode(inputSize);
 	thrust::device_vector<VoxBucketItem<int>> d_srcNode(inputSize);
@@ -213,15 +192,16 @@ int parDijkstra(std::vector<int> &srcNode,
 
 	thrust::device_vector<bool> d_settled(cuGraph.numVertices);
 
-	// launch kernel
+	// INIT BUCKET HEAP
 	int nodes=inputSize;
+	BucketHeap* bucketHeap = new BucketHeap();
 	ParBucketHeap<int> bh(nodes,1);
 	std::cout<<"input sources has "<<inputSize<<std::endl;
 	using thrust::raw_pointer_cast;
-	thrust::device_vector<int> d_test_vec(nodes);
 	int block_size=1;
 	int grid_size=bh.max_levels;
 
+	/// SERIAL TEST
 	//	for(int i=0;i<inputSize;i++)
 	//	{
 	//
@@ -246,6 +226,8 @@ int parDijkstra(std::vector<int> &srcNode,
 	//		printf("extracted min is %d \n",out);
 	//		B0Size=bh.bucSizes_shared[0];
 	//	}
+
+	/// MUTEX TEST
 	thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
 	bool *finished;
 	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
@@ -257,12 +239,19 @@ int parDijkstra(std::vector<int> &srcNode,
 	CUDA_FREE_DEV_MEM(finished);
 
 	bh.printAllItems();
+
 	for(int i=0;i<inputSize;i++)
 	{
 		VoxBucketItem<int> item=d_outNodes[i];
 		std::cout<<"("<<item.key<<", "<<item.priority<<")";
 	}
+
+
+
+
+
 	// TODO perform V rounds
+	//	thrust::device_vector<int> d_test_vec(nodes);
 	//	BH_iter<int><<<grid_size,block_size>>>(bh,
 	//			inputSize, cuGraph.numEdges, cuGraph.numVertices,
 	//			raw_pointer_cast(&d_srcNode[0]),

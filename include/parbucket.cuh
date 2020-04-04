@@ -71,7 +71,21 @@ struct ParBucketHeapBase
 						}
 
 
-	__device__ int update(VoxBucketItem<Ktype> eInPtr)
+	__device__ void updateRes(VoxBucketItem<Ktype> eIn)
+	{
+		int isFail1=0,isFail2=0;
+		do{
+
+			isFail1=update(eIn);  // can fail because not yet resolved
+			//resolve
+			isFail2=Resolve(0);  // can fail because !metConstrain
+
+		}while(isFail1<0||isFail2<0);
+		// only fail 1, then resolve can address
+		// only fail 2, then 1 will fail as well.
+		// fail both because lv 2 takes too long
+	}
+	__device__ int update(VoxBucketItem<Ktype> eIn)
 	{
 		if(!metConstrain(0))
 			return -1;
@@ -84,7 +98,7 @@ struct ParBucketHeapBase
 			return -1;
 		}
 		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
-		S0->setVal(eInPtr.key,eInPtr.priority);
+		S0->setVal(eIn.key,eIn.priority);
 		d_active_signals[0]++;
 		operationOK=true;
 		return 0;
@@ -105,6 +119,20 @@ struct ParBucketHeapBase
 		}
 		return idOut;
 
+	}
+	__device__ void extractMinRes(VoxBucketItem<Ktype> &eOut)
+	{
+		int isFail1=0,isFail2=0;
+		do{
+
+			isFail1=extractMin(eOut);  // can fail because not yet resolved
+			//resolve
+			isFail2=Resolve(0);  // can fail because !metConstrain
+
+		}while(isFail1<0||isFail2<0);
+		// only fail 1, then resolve can address
+		// only fail 2, then 1 will fail as well.
+		// fail both because lv 2 takes too long
 	}
 	__device__ int  extractMin(VoxBucketItem<Ktype> &eOut)
 	{
