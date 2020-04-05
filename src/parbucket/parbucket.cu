@@ -23,10 +23,10 @@ void BH_insertTest(ParBucketHeap<Ktype> bh,
 		{
 			bh.updateRes(eInVec[i]);
 		}
-		for(int i=0;i<vec_num;i++)
-		{
-			bh.extractMinRes(eOutVec[i]);
-		}
+//		for(int i=0;i<vec_num;i++)
+//		{
+//			bh.extractMinRes(eOutVec[i]);
+//		}
 		*finished=true;
 	}else
 	{
@@ -202,30 +202,32 @@ int parDijkstra(std::vector<int> &srcNode,
 	int grid_size=bh.max_levels;
 
 	/// SERIAL TEST
-	//	for(int i=0;i<inputSize;i++)
-	//	{
-	//
-	//
-	//		BH_insertSerail<int><<<1,1>>>(bh,
-	//				raw_pointer_cast(&d_srcNode[i]),
-	//				raw_pointer_cast(&d_test_vec[0]));
-	//
-	//		//				bh.printAllItems();
-	//		//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
-	//		//	    bucketHeap->printBucketCPU();
-	//	}
+//	thrust::device_vector<int> d_test_vec(inputSize);
+//		for(int i=0;i<inputSize;i++)
+//		{
+//
+//
+//			BH_insertSerail<int><<<1,1>>>(bh,
+//					raw_pointer_cast(&d_srcNode[i]),
+//					raw_pointer_cast(&d_test_vec[0]));
+//
+//							bh.printAllItems();
+//			//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
+//			//	    bucketHeap->printBucketCPU();
+//		}
 
-	//	int B0Size=bh.bucSizes_shared[0];
-	//	while(B0Size>0)
-	//	{
-	//		BH_extractSerail<int><<<1,1>>>(bh,
-	//				raw_pointer_cast(&d_test_vec[0]));
-	//
-	//		bh.printAllItems();
-	//		int out=d_test_vec[0];
-	//		printf("extracted min is %d \n",out);
-	//		B0Size=bh.bucSizes_shared[0];
-	//	}
+//		int B0Size=bh.bucSizes_shared[0];
+//		while(B0Size>0)
+//		for(int i=0;i<inputSize;i++)
+//		{
+//			BH_extractSerail<int><<<1,1>>>(bh,
+//					raw_pointer_cast(&d_test_vec[i]));
+//
+//			bh.printAllItems();
+//			int out=d_test_vec[i];
+//			printf("extracted min is %d \n",out);
+////			B0Size=bh.bucSizes_shared[0];
+//		}
 
 	/// MUTEX TEST
 	thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
@@ -244,6 +246,10 @@ int parDijkstra(std::vector<int> &srcNode,
 	{
 		VoxBucketItem<int> item=d_outNodes[i];
 		std::cout<<"("<<item.key<<", "<<item.priority<<")";
+		if(item.key==63)
+		{
+			printf("celebrate");
+		}
 	}
 
 

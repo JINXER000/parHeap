@@ -56,10 +56,16 @@ struct LockSet {
         return true;
 			}
 		}
+		//atomicCAS(a, b, c)将判断变量a是否等于b，
+		 //若相等，则用c的值去替换a，并返回a的值；若不相等，则返回a的值。 所以总是return a的旧值。
+		 //函数lock()中，线程不断尝试判断mutex是否为0，
+		 //若为0则改写为-1 ，表明“占用”，禁止其他线程进行访问
+		 //若为-1则继续尝试判断
 		//old == compare ? val : old
     // if not acquired, then we should switch it to LOCKED
 		// try to write
 		// the attempt invalidates ALL read locks -- because a writer is already going to change the values
+
 		int result = atomicCAS(&lock, (int)CLS_FREE, (int)CLS_LOCKED);
 
 		if (result == CLS_LOCKED) { // failed to acquire
@@ -114,6 +120,9 @@ struct LockSet {
 #ifdef __CUDACC__
 	__device__
 	void _YieldLock(Lock &lock) {
+		//atomicExch(a, b)返回第一个变量的值，并将两个变量的值进行交换
+		 //这里使用原子操作只是与上面的atomicCAS统一，否则可以直接用赋值语句
+		 //线程操作完成，将mutex改写回0，允许其他线程进行访问
     int result = atomicExch(&lock, (int)CLS_FREE);
     assert(result == (int)CLS_LOCKED);
 	}

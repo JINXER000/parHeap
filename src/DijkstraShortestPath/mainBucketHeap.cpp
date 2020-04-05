@@ -152,7 +152,7 @@ int main(){
 //            distance[i] = 0;
 //        }
 //    }
-    int inputSize=32;
+    int inputSize=64;
     for(int i=0;i<inputSize;i++)
     {
     	srcNode.push_back(i);
