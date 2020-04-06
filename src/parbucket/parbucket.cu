@@ -16,17 +16,16 @@ void BH_insertTest(ParBucketHeap<Ktype> bh,
 	const int thid=threadIdx.x;
 
 	// assume push and pop vec_num elems
-
 	if(level==0)
 	{
 		for(int i=0;i<vec_num;i++)
 		{
 			bh.updateRes(eInVec[i]);
 		}
-//		for(int i=0;i<vec_num;i++)
-//		{
-//			bh.extractMinRes(eOutVec[i]);
-//		}
+		for(int i=0;i<vec_num;i++)
+		{
+			bh.extractMinRes(eOutVec[i]);
+		}
 		*finished=true;
 	}else
 	{
@@ -195,7 +194,7 @@ int parDijkstra(std::vector<int> &srcNode,
 	// INIT BUCKET HEAP
 	int nodes=inputSize;
 	BucketHeap* bucketHeap = new BucketHeap();
-	ParBucketHeap<int> bh(nodes,1);
+	ParBucketHeap<int> bh(nodes+2,1);
 	std::cout<<"input sources has "<<inputSize<<std::endl;
 	using thrust::raw_pointer_cast;
 	int block_size=1;
@@ -246,10 +245,6 @@ int parDijkstra(std::vector<int> &srcNode,
 	{
 		VoxBucketItem<int> item=d_outNodes[i];
 		std::cout<<"("<<item.key<<", "<<item.priority<<")";
-		if(item.key==63)
-		{
-			printf("celebrate");
-		}
 	}
 
 

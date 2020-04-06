@@ -29,6 +29,7 @@ struct ParBucketHeapBase
 	// param for the whole heap
 	int *q; // largest non-empty level of Bi
 	int d; //bulk size
+	int maxLV;
 
 	bool operationOK;
 
@@ -53,30 +54,30 @@ struct ParBucketHeapBase
 	VoxBucketItem<Ktype> *voxSignals;
 
 	//	BSlevel<Ktype>* bs_levels;
-	ParBucketHeapBase(int n,int d_=1):d(d_),operationOK(0)
+	ParBucketHeapBase(int n,int max_levels,int d_=1):d(d_),operationOK(0),maxLV(max_levels)
 	{
 
 	}
 
 	__device__ VoxBucketItem<Ktype> *getBucItem(int lv,int id)
-						{
+										{
 		int glbId=d_bucketOffsets[lv]+id;
 		return &(voxBuckets[glbId]);
-						}
+										}
 
 	__device__ VoxBucketItem<Ktype> *getSigItem(int lv,int id)
-						{
+										{
 		int glbId=d_signalOffsets[lv]+id;
 		return &(voxSignals[glbId]);
-						}
+										}
 
 
 	__device__ void updateRes(VoxBucketItem<Ktype> eIn)
 	{
-		if(eIn.key==63)
-		{
-			printf("where is 63");
-		}
+//		if(eIn.key==63)
+//		{
+//			printf("where is 63");
+//		}
 		int isFail1=0,isFail2=0;
 		do{
 
@@ -159,9 +160,9 @@ struct ParBucketHeapBase
 		int idOut=findMin();
 		VoxBucketItem<Ktype>* eOutPtr=getBucItem(0,idOut);
 
-//		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
-//		S0->setVal(eOutPtr->key,-1 );
-//		d_active_signals[0]++;
+		//		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
+		//		S0->setVal(eOutPtr->key,-1 );
+		//		d_active_signals[0]++;
 
 		eOut.setVal(eOutPtr->key,eOutPtr->priority);
 		removeElemB(0,idOut);
@@ -184,28 +185,28 @@ struct ParBucketHeapBase
 	{
 		return d_timestamps[level];
 	}
-//	__device__
-//	bool metConstrain2nd(int level)
-//	{
-//		int this_cnt,last_cnt,next_cnt;
-//		this_cnt=getTimeStamp(level);
-//		if(level>*q)
-//		{
-//			return false;
-//			//			assert(false);
-//		}
-//		if(level>1&&this_cnt)
-//	}
+	//	__device__
+	//	bool metConstrain2nd(int level)
+	//	{
+	//		int this_cnt,last_cnt,next_cnt;
+	//		this_cnt=getTimeStamp(level);
+	//		if(level>*q)
+	//		{
+	//			return false;
+	//			//			assert(false);
+	//		}
+	//		if(level>1&&this_cnt)
+	//	}
 	__device__
 	bool metConstrain(int level)
 	{
 		int this_cnt,last_cnt,next_cnt;
 		this_cnt=getTimeStamp(level);
-//		if(level>*q)
-//		{
-//			return false;
-//			//			assert(false);
-//		}
+		//		if(level>*q)
+		//		{
+		//			return false;
+		//			//			assert(false);
+		//		}
 		// 1st level
 		if(level==0)
 		{
@@ -255,13 +256,13 @@ struct ParBucketHeapBase
 
 
 			Merge(Si,Bi,d_active_signals[level],d_active_buckets[level]);
-			if(Si[0].key==63)
-			{
-				int B00=Bi[0].key;
-				int B01=Bi[1].key;
-				int B02=Bi[2].key;
-				int B02p=Bi[2].priority;
-			}
+//			if(Si[0].key==63)
+//			{
+//				int B00=Bi[0].key;
+//				int B01=Bi[1].key;
+//				int B02=Bi[2].key;
+//				int B02p=Bi[2].priority;
+//			}
 			clearS(Si,d_active_signals[level]);
 			DelDupOnBucket(level);
 
@@ -322,19 +323,19 @@ struct ParBucketHeapBase
 
 		}
 		//////////// routine
-//		VoxBucketItem<Ktype>* Bi=getBucItem(level,0);
-//		if(level==0)
-//		{
-//			int b1k=Bi[0].key;
-//			int b1k2=Bi[1].key;
-//			if (b1k==24&&b1k2==29)
-//			{
-//				printf("laji");
-//			}
-//		}
+		//		VoxBucketItem<Ktype>* Bi=getBucItem(level,0);
+		//		if(level==0)
+		//		{
+		//			int b1k=Bi[0].key;
+		//			int b1k2=Bi[1].key;
+		//			if (b1k==24&&b1k2==29)
+		//			{
+		//				printf("laji");
+		//			}
+		//		}
 		// maintain the largest non empty level, see report p5
 		NonEmptyBucketSignal(level);
-//		printD(level);
+		printD(level);
 
 
 	}
@@ -349,14 +350,32 @@ struct ParBucketHeapBase
 		}
 
 		// if locked, wait
-		LockSet<1> lockset;
-		while(!lockset.TryLock(d_locks[level/2]))
+		//		LockSet<1> lockset;
+		//		while(!lockset.TryLock(d_locks[level/2]))
+		//		{
+		//			// waiting for adjacent blk
+		//		}
+		LockSet<3> lockset;
+		bool acuiredThis=false,acuiredLast=false, acuiredNext=false;
+		bool acuiredAll=false;
+		while(!acuiredAll)
 		{
-			// waiting for adjacent blk
-		}
+			acuiredThis=lockset.TryLock(d_locks[level]);
+			if(level-1>=0)
+				acuiredLast=lockset.TryLock(d_locks[level-1]);
+			else
+				acuiredLast=true;
+			if(level+1<maxLV)
+				acuiredNext=lockset.TryLock(d_locks[level+1]);
+			else
+				acuiredNext=true;
 
-		printf("res level %d starts \n",level);
-		__threadfence_system();
+			acuiredAll=acuiredThis&&acuiredLast&&acuiredNext;
+			if(!acuiredAll)
+				lockset.YieldAll();
+		}
+		//		printf("res level %d starts \n",level);
+		//		__threadfence_system();
 
 
 		ResSerial(level);
@@ -370,9 +389,9 @@ struct ParBucketHeapBase
 		//				int out=d_mem[level/2]*getTimeStamp(level);
 		//				d_mem[level/2]=0;
 		//unlock
-		printf("res level %d ends \n",level);
-		__threadfence_system();
-		lockset.Yield(d_locks[level/2]);
+		//		printf("res level %d ends \n",level);
+		//		__threadfence_system();
+		//		lockset.Yield(d_locks[level/2]);
 
 
 		return d_timestamps[level];
@@ -530,12 +549,12 @@ struct ParBucketHeapBase
 	{
 		// since Bi is sorted, NO NEED to quick select??
 		VoxBucketItem<Ktype>* Bi=getBucItem(lv,0);
-//		int acb=d_active_buckets[lv];
+		//		int acb=d_active_buckets[lv];
 		if(d_active_buckets[lv]<smallerNum)
 		{
-//			int B2k=Bi[d_active_buckets[lv]-1].key;
+			//			int B2k=Bi[d_active_buckets[lv]-1].key;
 			pi_out=Bi[d_active_buckets[lv]-1].priority;
-//			assert(false);
+			//			assert(false);
 			return d_active_buckets[lv];
 		}
 		pi_out=Bi[smallerNum-1].priority;
@@ -601,7 +620,7 @@ struct ParBucketHeapBase
 	__device__ void printD(int level)
 	{
 
-		printf("\nResolving level %d\n",level);
+		printf("\nThe current timestamp of level 0 is %d\n",d_timestamps[0]);
 		for(int lv=0;lv<=*q;lv++)
 		{
 			printf("res level %d S%d\t:",level,lv);
@@ -609,10 +628,10 @@ struct ParBucketHeapBase
 			for(int i=0;i<d_active_signals[lv];i++)
 			{
 				printf("(%d,%d)",Si[i].key,Si[i].priority);
-				if(level>0&&Si[i].key==63)
-				{
-					printf("freeze");
-				}
+//				if(level>0&&Si[i].key==63)
+//				{
+//					printf("freeze");
+//				}
 			}
 			printf("\n");
 			printf("res level %d B%d\t:",level,lv);
@@ -620,10 +639,10 @@ struct ParBucketHeapBase
 			for(int i=0;i<d_active_buckets[lv];i++)
 			{
 				printf("(%d,%d)",Bi[i].key,Bi[i].priority);
-				if(level>0&&Bi[i].key==63)
-				{
-					printf("freeze");
-				}
+//				if(level>0&&Bi[i].key==63)
+//				{
+//					printf("freeze");
+//				}
 			}
 			printf("\n");
 
@@ -638,7 +657,7 @@ class ParBucketHeap: public ParBucketHeapBase<Ktype>
 {
 public:
 	int nodes,bulkSize,activeLvs;// n.d.q
-	int max_levels, cuncurrent_levels;
+	int max_levels;
 	typedef ParBucketHeapBase<Ktype> parent_type;
 	typename vector_type<int,memspace>::type activeLVs_shared;
 	typename vector_type<int,memspace>::type locks_shared;
@@ -654,12 +673,12 @@ public:
 	typename vector_type<int,memspace>::type dbg_shared;
 
 	ParBucketHeap(int n_,int d_=1):nodes(n_),bulkSize(d_),activeLvs(-1),activeLVs_shared(1),
-			max_levels(log(n_/d_)/log(4)+2),cuncurrent_levels(ceil(1.0f*max_levels/2)),
-			parent_type(n_,d_),locks_shared(cuncurrent_levels),
+			max_levels(log(n_/d_)/log(4)+2),
+			parent_type(n_,max_levels,d_),locks_shared(max_levels),
 			times_shared(max_levels),priorities_shared(max_levels),
 			sigSizes_shared(max_levels),bucSizes_shared(max_levels),
 			sigOffsets_shared(max_levels),bucOffsets_shared(max_levels),
-			dbg_shared(cuncurrent_levels)
+			dbg_shared(max_levels)
 	{
 		// consider use thrust::prefixsum..
 		thrust::fill(locks_shared.begin(),locks_shared.end(),0);
