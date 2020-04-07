@@ -50,7 +50,8 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 		int* edgesOffset,
 		int* edgesSize,
 		bool* settled,
-		int* test_vec)
+		bool* finished,
+		Ktype destination)
 {
 	const int level=blockIdx.x;
 	const int thid=threadIdx.x;
@@ -59,49 +60,68 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 
 	if(level==0)
 	{
-		VoxBucketItem<Ktype> eIn;
-		//		do
-		//		{
-		for(int is=0;is<inputSize;is++) // is: index of src
+		// insert all, initialize
+		for(int iv=0;iv<numVertices;iv++) // iv: index of vertex
 		{
+			bool is_src=false;
+			int init_priority=0;
+			for(int is=0;is<inputSize;is++) // is: index of src
+			{
+				if(iv==srcNodes[is].key)
+				{
+					is_src=true;
+					break;
+				}
+			}
+			if(is_src)
+			{
+				init_priority=0;
+			}else
+			{
+				init_priority=INT_MAX-1;
+			}
+				bh.updateRes(iv,init_priority);
+				distance[iv]=init_priority;
+		}
+		VoxBucketItem<Ktype> eOut;
+		for(int round=0;round<numVertices;round++)
+		{
+			bh.extractMinRes(eOut);
+			// check finish
+			if(eOut.key==destination)
+			{
+				*finished=true;
+				break;
+			}
 			// mark v as settled
-			Ktype v=srcNodes[is].key;
-			int p=srcNodes[is].priority;
+			Ktype v=eOut.key;
+			int p=eOut.priority;
 			settled[v]=1;
-			// if u is not settled, update((u,p+w))
+
 			for(int ie=edgesOffset[v];ie<edgesOffset[v]+edgesSize[v];ie++) // ie: index of edge
 			{
+				// if u is not settled, update((u,p+w))
 				AdjacentNode v2u=adjList[ie];
 				Ktype u=v2u.terminalVertex; // index of terminal vertex
 				int w=v2u.weight;
 				if(settled[u])
 					continue;
-				eIn.setVal(u,p+w);
-				int isFail=bh.update(eIn);
-				//resolve
-				test_vec[level]=bh.Resolve(level);
+				if(distance[u]>p+w)
+				{
+					distance[u]=p+w;
+					bh.updateRes(u,p+w);
+				}
 			}
-
 		}
-		// extract elem with min priority
-
-		VoxBucketItem<Ktype> eOut;
-		int isFail=bh.extractMin(eOut);
-		test_vec[level]=bh.Resolve(level);
-
-		// for next round update
-		eIn.setVal(eOut.key,eOut.priority);
-		//		}while(bh.q>=0);
-
-
-	}else
+	}else // level>0
 	{
-		//resolve
-		test_vec[level]=bh.Resolve(level);
+		do
+		{
+			int isFail3=0;
+			//resolve
+			isFail3=bh.Resolve(level);  // can fail because !metConstrain
+		}while(!*finished);
 	}
-
-
-
 }
 
 
@@ -174,7 +194,7 @@ int parDijkstra(std::vector<int> &srcNode,
 	thrust::device_vector<VoxBucketItem<int>> d_srcNode(inputSize);
 	for(int id=0;id<inputSize;id++)
 	{
-		h_srcNode[id].setVal(srcNode[id],abs(id%5));
+		h_srcNode[id].setVal(srcNode[id],abs((id+3)%5));
 	}
 
 	thrust::copy(h_srcNode.begin(),h_srcNode.end(),d_srcNode.begin());
@@ -214,9 +234,7 @@ int parDijkstra(std::vector<int> &srcNode,
 //			//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
 //			//	    bucketHeap->printBucketCPU();
 //		}
-
-//		int B0Size=bh.bucSizes_shared[0];
-//		while(B0Size>0)
+//
 //		for(int i=0;i<inputSize;i++)
 //		{
 //			BH_extractSerail<int><<<1,1>>>(bh,
@@ -225,7 +243,9 @@ int parDijkstra(std::vector<int> &srcNode,
 //			bh.printAllItems();
 //			int out=d_test_vec[i];
 //			printf("extracted min is %d \n",out);
-////			B0Size=bh.bucSizes_shared[0];
+//			int B0Size=bh.bucSizes_shared[0];
+//			if(B0Size==0)
+//				break;
 //		}
 
 	/// MUTEX TEST

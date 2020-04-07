@@ -50,8 +50,9 @@ struct ParBucketHeapBase
 
 
 	// buckets and signals
-	VoxBucketItem<Ktype> *voxBuckets;
-	VoxBucketItem<Ktype> *voxSignals;
+	//	VoxBucketItem<Ktype> *voxBuckets;
+	//	VoxBucketItem<Ktype> *voxSignals;
+	VoxBucketItem<Ktype> *bucketSignals;
 
 	//	BSlevel<Ktype>* bs_levels;
 	ParBucketHeapBase(int n,int max_levels,int d_=1):d(d_),operationOK(0),maxLV(max_levels)
@@ -59,25 +60,28 @@ struct ParBucketHeapBase
 
 	}
 
-	__device__ VoxBucketItem<Ktype> *getBucItem(int lv,int id)
-										{
-		int glbId=d_bucketOffsets[lv]+id;
-		return &(voxBuckets[glbId]);
-										}
-
-	__device__ VoxBucketItem<Ktype> *getSigItem(int lv,int id)
-										{
-		int glbId=d_signalOffsets[lv]+id;
-		return &(voxSignals[glbId]);
-										}
-
-
-	__device__ void updateRes(VoxBucketItem<Ktype> eIn)
+	__device__
+	VoxBucketItem<Ktype> *getBucItem(int lv,int id)
 	{
-//		if(eIn.key==63)
-//		{
-//			printf("where is 63");
-//		}
+		int glbId=d_bucketOffsets[lv]+id;
+		return &(bucketSignals[glbId]);
+	}
+
+	__device__
+	VoxBucketItem<Ktype> *getSigItem(int lv,int id)
+	{
+		int glbId=d_signalOffsets[lv]+id;
+		return &(bucketSignals[glbId]);
+	}
+
+
+	__device__
+	void updateRes(VoxBucketItem<Ktype> eIn)
+	{
+		//		if(eIn.key==63)
+		//		{
+		//			printf("where is 63");
+		//		}
 		int isFail1=0,isFail2=0;
 		do{
 
@@ -90,7 +94,8 @@ struct ParBucketHeapBase
 		// only fail 2, then 1 will fail as well.
 		// fail both because lv 2 takes too long
 	}
-	__device__ int update(VoxBucketItem<Ktype> eIn)
+	__device__
+	int update(VoxBucketItem<Ktype> eIn)
 	{
 		if(!metConstrain(0))
 			return -1;
@@ -160,9 +165,9 @@ struct ParBucketHeapBase
 		int idOut=findMin();
 		VoxBucketItem<Ktype>* eOutPtr=getBucItem(0,idOut);
 
-		//		VoxBucketItem<Ktype>* S0=getSigItem(0,0);
-		//		S0->setVal(eOutPtr->key,-1 );
-		//		d_active_signals[0]++;
+		//				VoxBucketItem<Ktype>* S0=getSigItem(0,0);
+		//				S0[0].setVal(eOutPtr->key,-1 );
+		//				d_active_signals[0]++;
 
 		eOut.setVal(eOutPtr->key,eOutPtr->priority);
 		removeElemB(0,idOut);
@@ -256,13 +261,13 @@ struct ParBucketHeapBase
 
 
 			Merge(Si,Bi,d_active_signals[level],d_active_buckets[level]);
-//			if(Si[0].key==63)
-//			{
-//				int B00=Bi[0].key;
-//				int B01=Bi[1].key;
-//				int B02=Bi[2].key;
-//				int B02p=Bi[2].priority;
-//			}
+			//			if(Si[0].key==63)
+			//			{
+			//				int B00=Bi[0].key;
+			//				int B01=Bi[1].key;
+			//				int B02=Bi[2].key;
+			//				int B02p=Bi[2].priority;
+			//			}
 			clearS(Si,d_active_signals[level]);
 			DelDupOnBucket(level);
 
@@ -335,7 +340,7 @@ struct ParBucketHeapBase
 		//		}
 		// maintain the largest non empty level, see report p5
 		NonEmptyBucketSignal(level);
-		printD(level);
+//				printD(level);
 
 
 	}
@@ -628,10 +633,10 @@ struct ParBucketHeapBase
 			for(int i=0;i<d_active_signals[lv];i++)
 			{
 				printf("(%d,%d)",Si[i].key,Si[i].priority);
-//				if(level>0&&Si[i].key==63)
-//				{
-//					printf("freeze");
-//				}
+				//				if(level>0&&Si[i].key==63)
+				//				{
+				//					printf("freeze");
+				//				}
 			}
 			printf("\n");
 			printf("res level %d B%d\t:",level,lv);
@@ -639,10 +644,10 @@ struct ParBucketHeapBase
 			for(int i=0;i<d_active_buckets[lv];i++)
 			{
 				printf("(%d,%d)",Bi[i].key,Bi[i].priority);
-//				if(level>0&&Bi[i].key==63)
-//				{
-//					printf("freeze");
-//				}
+				//				if(level>0&&Bi[i].key==63)
+				//				{
+				//					printf("freeze");
+				//				}
 			}
 			printf("\n");
 
@@ -667,9 +672,9 @@ public:
 	typename vector_type<int,memspace>::type bucSizes_shared;
 	typename vector_type<int,memspace>::type sigOffsets_shared;
 	typename vector_type<int,memspace>::type bucOffsets_shared;
-	typename vector_type<VoxBucketItem<Ktype>,memspace>::type buckets_shared;
-	typename vector_type<VoxBucketItem<Ktype>,memspace>::type signals_shared;
-
+	//	typename vector_type<VoxBucketItem<Ktype>,memspace>::type buckets_shared;
+	//	typename vector_type<VoxBucketItem<Ktype>,memspace>::type signals_shared;
+	typename vector_type<VoxBucketItem<Ktype>,memspace>::type bucketSignals_shared;
 	typename vector_type<int,memspace>::type dbg_shared;
 
 	ParBucketHeap(int n_,int d_=1):nodes(n_),bulkSize(d_),activeLvs(-1),activeLVs_shared(1),
@@ -686,21 +691,26 @@ public:
 		thrust::fill(priorities_shared.begin(),priorities_shared.end(),0);
 		thrust::fill(sigSizes_shared.begin(),sigSizes_shared.end(),0);
 		thrust::fill(bucSizes_shared.begin(),bucSizes_shared.end(),0);
-		bucOffsets_shared[0]=0;
+
 		sigOffsets_shared[0]=0;
+		bucOffsets_shared[0]=2;
 		for(int lv=1;lv<max_levels;lv++)
 		{
-			//			int bucketCapacity = d*pow(2, (2*id+1));     // Bi
-			//			int signalCapacity = d*pow(2, (2*id)); // Si+1
-			// however, we double the size for Merge()
-			bucOffsets_shared[lv]=bucOffsets_shared[lv-1]+bulkSize*pow(2, (2*lv-1)+1);  //lv=1,start from 2
-			sigOffsets_shared[lv]=sigOffsets_shared[lv-1]+bulkSize*pow(2, (2*lv-2)+1);  //lv=1.start from 1
+			//			int bucketCapacity = d*pow(2, (2*id+2));     // Bi
+			//			int signalCapacity = d*pow(2, (2*id+1)); // Si+1
+			// however, we double the size for temporal flow like Merge()
+
+			// sig offset(current) = buck offset(last) +bucSize(last)
+			sigOffsets_shared[lv]=bucOffsets_shared[lv-1]+bulkSize*pow(2, 2*lv);  //lv=1.start from 6
+			bucOffsets_shared[lv]=sigOffsets_shared[lv]+bulkSize*pow(2, 2*lv+1);  //lv=1,start from 14
 
 		}
-		int total_bucElems=bucOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels-1)+1);
-		int total_sigElems=sigOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels-2)+1);
-		buckets_shared.resize(total_bucElems);
-		signals_shared.resize(total_sigElems);
+		//		int total_bucElems=bucOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels-1)+1);
+		//		int total_sigElems=sigOffsets_shared[max_levels-1]+bulkSize*pow(2, (2*max_levels-2)+1);
+		//		buckets_shared.resize(total_bucElems);
+		//		signals_shared.resize(total_sigElems);
+		int total_elems=bucOffsets_shared[max_levels-1]+bulkSize*pow(2, 2*max_levels-1);
+		bucketSignals_shared.resize(total_elems);
 
 		using thrust::raw_pointer_cast;
 		this->d_locks=raw_pointer_cast(&locks_shared[0]);
@@ -710,12 +720,21 @@ public:
 		this->d_active_buckets=raw_pointer_cast(&bucSizes_shared[0]);
 		this->d_bucketOffsets=raw_pointer_cast(&bucOffsets_shared[0]);
 		this->d_signalOffsets=raw_pointer_cast(&sigOffsets_shared[0]);
-		this->voxBuckets=raw_pointer_cast(&buckets_shared[0]);
-		this->voxSignals=raw_pointer_cast(&signals_shared[0]);
+		//		this->voxBuckets=raw_pointer_cast(&buckets_shared[0]);
+		//		this->voxSignals=raw_pointer_cast(&signals_shared[0]);
+		this->bucketSignals=raw_pointer_cast(&bucketSignals_shared[0]);
 		this->q=raw_pointer_cast(&activeLVs_shared[0]);
 		this->d_mem=raw_pointer_cast(&dbg_shared[0]);
 
 
+	}
+	int getSigLoc(int lv, int id)
+	{
+		return sigOffsets_shared[lv]+id;
+	}
+	int getBucLoc(int lv, int id)
+	{
+		return bucOffsets_shared[lv]+id;
 	}
 	void printAllItems()
 	{
@@ -728,16 +747,16 @@ public:
 			std::cout<<"S"<<lv<<"\t:";
 			for(int i=0;i<sigSizes_shared[lv];i++)
 			{
-				int itemLoc=sigOffsets_shared[lv]+i;
-				VoxBucketItem<Ktype> item=signals_shared[itemLoc];
+				int itemLoc=getSigLoc(lv,i);
+				VoxBucketItem<Ktype> item=bucketSignals_shared[itemLoc];
 				std::cout<<"("<<item.key<<", "<<item.priority<<")";
 			}
 			std::cout<<std::endl;
 			std::cout<<"B"<<lv<<"\t:";
 			for(int i=0;i<bucSizes_shared[lv];i++)
 			{
-				int itemLoc=bucOffsets_shared[lv]+i;
-				VoxBucketItem<Ktype> item=buckets_shared[itemLoc];
+				int itemLoc=getBucLoc(lv,i);
+				VoxBucketItem<Ktype> item=bucketSignals_shared[itemLoc];
 				std::cout<<"("<<item.key<<", "<<item.priority<<")";
 			}
 			std::cout<<std::endl;

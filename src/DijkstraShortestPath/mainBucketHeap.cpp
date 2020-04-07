@@ -152,7 +152,7 @@ int main(){
 	//            distance[i] = 0;
 	//        }
 	//    }
-	int inputSize=67;
+	int inputSize=78;
 	for(int i=0;i<inputSize;i++)
 	{
 //		if(i>5&&i<10)
