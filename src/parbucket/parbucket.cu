@@ -162,10 +162,7 @@ void BH_extractSerail(ParBucketHeap<Ktype> bh,
 
 	VoxBucketItem<Ktype> eout;
 	int isFail=bh.extractMin(eout);
-	if(isFail)
-	{
-		printf("wtf");
-	}
+
 	//resolve
 	for (int level=0;level<bh.max_levels;level++)
 	{
