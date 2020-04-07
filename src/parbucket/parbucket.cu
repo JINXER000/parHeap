@@ -60,7 +60,7 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 
 	if(level==0)
 	{
-		// insert all, initialize
+//		// insert all, initialize
 		for(int iv=0;iv<numVertices;iv++) // iv: index of vertex
 		{
 			bool is_src=false;
@@ -80,8 +80,8 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 			{
 				init_priority=INT_MAX-1;
 			}
-				bh.updateRes(iv,init_priority);
-				distance[iv]=init_priority;
+			bh.updateRes(iv,init_priority);
+			distance[iv]=init_priority;
 		}
 		VoxBucketItem<Ktype> eOut;
 		for(int round=0;round<numVertices;round++)
@@ -113,7 +113,8 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 				}
 			}
 		}
-	}else // level>0
+	}
+	else // level>0
 	{
 		do
 		{
@@ -183,9 +184,10 @@ void BH_extractSerail(ParBucketHeap<Ktype> bh,
 
 int parDijkstra(std::vector<int> &srcNode,
 		Graph<AdjacentNode> &cuGraph,
-		std::vector<int> &distances)
+		std::vector<int> &distances,
+		int destination)
 {
-
+	using thrust::raw_pointer_cast;
 
 
 	///  initCudaGraph
@@ -194,7 +196,7 @@ int parDijkstra(std::vector<int> &srcNode,
 	thrust::device_vector<VoxBucketItem<int>> d_srcNode(inputSize);
 	for(int id=0;id<inputSize;id++)
 	{
-		h_srcNode[id].setVal(srcNode[id],abs((id+3)%5));
+		h_srcNode[id].setVal(srcNode[id],id%5);
 	}
 
 	thrust::copy(h_srcNode.begin(),h_srcNode.end(),d_srcNode.begin());
@@ -212,85 +214,92 @@ int parDijkstra(std::vector<int> &srcNode,
 	thrust::device_vector<bool> d_settled(cuGraph.numVertices);
 
 	// INIT BUCKET HEAP
-	int nodes=inputSize;
-	BucketHeap* bucketHeap = new BucketHeap();
-	ParBucketHeap<int> bh(nodes+2,1);
-	std::cout<<"input sources has "<<inputSize<<std::endl;
-	using thrust::raw_pointer_cast;
+//	int nodes=inputSize;
+//	BucketHeap* bucketHeap = new BucketHeap();
+//	std::cout<<"input sources has "<<inputSize<<std::endl;
+//
+//	ParBucketHeap<int> bh(nodes+2,1);
+//	int block_size=1;
+//	int grid_size=bh.max_levels;
+
+	///// SERIAL TEST
+	//	thrust::device_vector<int> d_test_vec(inputSize);
+	//		for(int i=0;i<inputSize;i++)
+	//		{
+	//
+	//
+	//			BH_insertSerail<int><<<1,1>>>(bh,
+	//					raw_pointer_cast(&d_srcNode[i]),
+	//					raw_pointer_cast(&d_test_vec[0]));
+	//
+	//							bh.printAllItems();
+	//			//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
+	//			//	    bucketHeap->printBucketCPU();
+	//		}
+	//
+	//		for(int i=0;i<inputSize;i++)
+	//		{
+	//			BH_extractSerail<int><<<1,1>>>(bh,
+	//					raw_pointer_cast(&d_test_vec[i]));
+	//
+	//			bh.printAllItems();
+	//			int out=d_test_vec[i];
+	//			printf("extracted min is %d \n",out);
+	//			int B0Size=bh.bucSizes_shared[0];
+	//			if(B0Size==0)
+	//				break;
+	//		}
+
+	///// MUTEX TEST
+	//	thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
+	//	bool *finished;
+	//	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
+	//	CUDA_DEV_MEMSET(finished,0,sizeof(int));
+	//	BH_insertTest<int><<<grid_size,block_size>>>(bh,
+	//			raw_pointer_cast(&d_srcNode[0]),
+	//			raw_pointer_cast(&d_outNodes[0]),
+	//			nodes,finished);
+	//	CUDA_FREE_DEV_MEM(finished);
+	//
+	//	bh.printAllItems();
+	//
+	//	for(int i=0;i<inputSize;i++)
+	//	{
+	//		VoxBucketItem<int> item=d_outNodes[i];
+	//		std::cout<<"("<<item.key<<", "<<item.priority<<")";
+	//	}
+
+
+
+	///// Pardjikstra
+	ParBucketHeap<int> bh(cuGraph.numVertices,1);
 	int block_size=1;
 	int grid_size=bh.max_levels;
 
-	/// SERIAL TEST
-//	thrust::device_vector<int> d_test_vec(inputSize);
-//		for(int i=0;i<inputSize;i++)
-//		{
-//
-//
-//			BH_insertSerail<int><<<1,1>>>(bh,
-//					raw_pointer_cast(&d_srcNode[i]),
-//					raw_pointer_cast(&d_test_vec[0]));
-//
-//							bh.printAllItems();
-//			//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
-//			//	    bucketHeap->printBucketCPU();
-//		}
-//
-//		for(int i=0;i<inputSize;i++)
-//		{
-//			BH_extractSerail<int><<<1,1>>>(bh,
-//					raw_pointer_cast(&d_test_vec[i]));
-//
-//			bh.printAllItems();
-//			int out=d_test_vec[i];
-//			printf("extracted min is %d \n",out);
-//			int B0Size=bh.bucSizes_shared[0];
-//			if(B0Size==0)
-//				break;
-//		}
-
-	/// MUTEX TEST
-	thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
 	bool *finished;
 	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
 	CUDA_DEV_MEMSET(finished,0,sizeof(int));
-	BH_insertTest<int><<<grid_size,block_size>>>(bh,
+	int* d_destination;
+	CUDA_ALLOC_DEV_MEM(&d_destination,sizeof(int));
+	CUDA_MEMCPY_H2D(d_destination,&destination,sizeof(int));
+
+
+	BH_iter<int><<<grid_size,block_size>>>(bh,
+			inputSize, cuGraph.numEdges, cuGraph.numVertices,
 			raw_pointer_cast(&d_srcNode[0]),
-			raw_pointer_cast(&d_outNodes[0]),
-			nodes,finished);
+			raw_pointer_cast(&d_distance[0]),
+			raw_pointer_cast(&d_adjLists[0]),
+			raw_pointer_cast(&d_edgesOffset[0]),
+			raw_pointer_cast(&d_edgesSize[0]),
+			raw_pointer_cast(&d_settled[0]),
+			 finished,
+			destination);
+	CUDA_FREE_DEV_MEM(d_destination);
 	CUDA_FREE_DEV_MEM(finished);
 
-	bh.printAllItems();
+	int dest_dist=d_distance[destination];
+	std::cout<<"finaldist= "<<dest_dist;
 
-	for(int i=0;i<inputSize;i++)
-	{
-		VoxBucketItem<int> item=d_outNodes[i];
-		std::cout<<"("<<item.key<<", "<<item.priority<<")";
-	}
-
-
-
-
-
-	// TODO perform V rounds
-	//	thrust::device_vector<int> d_test_vec(nodes);
-	//	BH_iter<int><<<grid_size,block_size>>>(bh,
-	//			inputSize, cuGraph.numEdges, cuGraph.numVertices,
-	//			raw_pointer_cast(&d_srcNode[0]),
-	//			raw_pointer_cast(&d_distance[0]),
-	//			raw_pointer_cast(&d_adjLists[0]),
-	//			raw_pointer_cast(&d_edgesOffset[0]),
-	//			raw_pointer_cast(&d_edgesSize[0]),
-	//			raw_pointer_cast(&d_settled[0]),
-	//			raw_pointer_cast(&d_test_vec[0]));
-
-	//	std::vector<int > h_test_vec(3);
-	//	thrust::copy(d_test_vec.begin(),d_test_vec.end(),h_test_vec.begin());
-	//
-	//	for(int i=0;i<3;i++)
-	//	{
-	//		std::cout<<h_test_vec[i]<<std::endl;
-	//
-	//	}
 
 	return 0;
 }

@@ -11,6 +11,7 @@ template <class Ktype>
 struct __align__(16) VoxBucketItem {
 	Ktype key;
 	int priority;
+
 	__device__ __host__
 	void setVal(Ktype k,int p)
 	{
@@ -74,6 +75,13 @@ struct ParBucketHeapBase
 		return &(bucketSignals[glbId]);
 	}
 
+	__device__
+	void updateRes(Ktype k, int p)
+	{
+		VoxBucketItem<Ktype> eIn;
+		eIn.setVal(k,p);
+		updateRes(eIn);
+	}
 
 	__device__
 	void updateRes(VoxBucketItem<Ktype> eIn)

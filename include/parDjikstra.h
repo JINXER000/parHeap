@@ -19,7 +19,8 @@ struct Graph {
 
 int parDijkstra(std::vector<int> &srcNode,
 		Graph<AdjacentNode> &cuGraph,
-		std::vector<int> &distances);
+		std::vector<int> &distances,
+		int destination);
 
 
 
