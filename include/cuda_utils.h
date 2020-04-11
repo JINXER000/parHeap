@@ -74,4 +74,146 @@ struct vector_type<T, device_memspace> {
   typedef thrust::device_vector<T> type;
 };
 
+
+__global__ void adjustInc(int *d_out,int* d_inc,int numElems,bool* finished)
+{
+	int id=(blockIdx.x*blockDim.x+threadIdx.x)*2;
+	if(id<numElems)
+	{
+		d_out[id]+=d_inc[blockIdx.x];
+	}
+	if(id+1<numElems)
+	{
+		d_out[id+1]+=d_inc[blockIdx.x];
+	}
+	finished[blockIdx.x]=true;
+}
+
+__global__ void ExclusiveScan(int  *d_out, const int* d_in, size_t input_size, int* blockSums,bool* finished)
+{
+	extern __shared__ int data[];
+	int tid = threadIdx.x;
+	int offset = 1;
+	int abs_start = 2*blockDim.x*blockIdx.x;
+
+	data[2 * tid] =(abs_start+2*tid)<input_size? d_in[abs_start+2 * tid]:0;
+	data[2 * tid+1] = (abs_start + 2 * tid+1)<input_size ? d_in[abs_start+2 * tid+1]:0;
+
+	for (int d = (2 * blockDim.x) >>1; d>0; d>>=1) {
+		__syncthreads();
+
+		if (tid < d) {
+			int ai = offset*(2 * tid + 1) - 1;
+			int bi = offset*(2 * tid + 2) - 1;
+
+			data[bi] += data[ai];
+		}
+		offset <<= 1;
+	}
+	// 0 1 2 3; 0 1 2 5; 0 1 2 6
+	if (tid == 0)data[2*blockDim.x - 1] = 0;
+
+	for (int d = 1; d < 2 * blockDim.x; d<<=1) {
+		offset >>= 1;
+		__syncthreads();
+		if (tid < d) {
+			int ai = offset*(2 * tid + 1) - 1;
+			int bi = offset*(2 * tid + 2) - 1;
+			int t = data[ai];
+			data[ai] = data[bi];
+			data[bi] += t;
+		}
+	}
+	// 0 1 2 0; 0 0 2 1; 0 0 1 3
+	__syncthreads();
+
+	if (abs_start + 2 * tid < input_size) {
+		d_out[abs_start + 2 * tid] = data[2 * tid];
+	}
+	if (abs_start + 2 * tid+1 < input_size) {
+		d_out[abs_start + 2 * tid+1] = data[2 * tid+1];
+	}
+
+	if (tid == 0) {
+		blockSums[blockIdx.x] = data[blockDim.x * 2 - 1];// 3
+		if(abs_start + blockDim.x * 2 - 1<input_size)blockSums[blockIdx.x]+=d_in[abs_start + blockDim.x * 2 - 1];//3+3=6
+		finished[blockIdx.x]=true;
+		bool fi=finished[blockIdx.x];
+		//		if(blockSums[blockIdx.x]==0)
+		//		{
+		//			printf("ffffff");
+		//		}
+		//		if(input_size==10)
+		//		{
+		//			printf("dbg here");
+		//		}
+
+	}
+
+}
+
+__device__
+void assertFinished(bool* finished,int size)
+{
+	bool release=true;
+	do
+	{
+		for(int i=0;i<size;i++)
+		{
+			if(!finished[i])
+			{
+				release=false;
+
+			printf("block %d not finished\n",i);
+			}
+
+		}
+	}while(release==false);
+	// for next use
+	for(int i=0;i<size;i++)
+	{
+		finished[i]=false;
+	}
+}
+__device__
+int PrefixSum(int* d_scan, int *d_pred, int numElems)
+{
+	int block_size=256;
+	int num_double_blocks=(numElems%(2*block_size)==0)?(numElems/(2*block_size)):(numElems/(2*block_size)+1);//ceil(1.0f*numElems/(2*block_size));
+	int* d_blk_offsets=(int*)malloc(sizeof(int)*num_double_blocks);
+	//	if(numElems==10)
+	//		printf("dbg here");
+	bool* finished=(bool*)malloc(sizeof(bool)*num_double_blocks);
+	for(int i=0;i<num_double_blocks;i++)
+	{
+		finished[i]=false;
+	}
+	ExclusiveScan<<<num_double_blocks,block_size,2*block_size*sizeof(int)>>>
+			(d_scan,d_pred,numElems,d_blk_offsets,finished);
+	assertFinished(finished,num_double_blocks);
+
+
+	int finalSum;
+	if(num_double_blocks>1)
+	{
+		int* d_scan_temp=(int*)malloc(sizeof(int)*num_double_blocks);
+		finalSum=PrefixSum(d_scan_temp,d_blk_offsets,num_double_blocks);
+
+		adjustInc<<<num_double_blocks,block_size>>>(d_scan,d_scan_temp,numElems,finished);
+		assertFinished(finished,num_double_blocks);
+		free(d_scan_temp);
+	}else
+	{
+		finalSum=d_blk_offsets[0];
+	}
+	free(d_blk_offsets);
+	free(finished);
+	if(finalSum==0)
+	{
+		printf("ffffff");
+	}
+
+	return finalSum;
+}
+
 #endif // CUDA_UTILS_H

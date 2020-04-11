@@ -171,23 +171,23 @@ int main(){
 	}
 	// GPU test
 	std::vector<int> srcNode;
-	for (int i = 0 ; i < numVertices ; i++) {
-		if (i == startVertex){
-			srcNode.push_back(i);
-			distance[i] = 0;
-		}else
-		{
-			distance[i] = INT_MAX-1;
+//	for (int i = 0 ; i < numVertices ; i++) {
+//		if (i == startVertex){
+//			srcNode.push_back(i);
+//			distance[i] = 0;
+//		}else
+//		{
+//			distance[i] = INT_MAX-1;
+//		}
+//	}
+		int inputSize=78;
+		for(int i=0;i<inputSize;i++)
+			{
+			if(i>5&&i<10)
+				srcNode.push_back(0);
+			else
+				srcNode.push_back(i+1);
 		}
-	}
-	//	int inputSize=78;
-	//	for(int i=0;i<inputSize;i++)
-		//	{
-	//		if(i>5&&i<10)
-	//			srcNode.push_back(0);
-	//		else
-	//			srcNode.push_back(i+1);
-	//	}
 
 	parheap::parDijkstra(srcNode,cuGraph,distance,destination);
 

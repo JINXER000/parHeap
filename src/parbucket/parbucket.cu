@@ -212,41 +212,41 @@ int parDijkstra(std::vector<int> &srcNode,
 	thrust::device_vector<bool> d_settled(cuGraph.numVertices);
 
 	// INIT BUCKET HEAP
-//	int nodes=inputSize;
-//	BucketHeap* bucketHeap = new BucketHeap();
-//	std::cout<<"input sources has "<<inputSize<<std::endl;
-//
-//	ParBucketHeap<int> bh(nodes+2,1);
-//	int block_size=1;
-//	int grid_size=bh.max_levels;
+	int nodes=inputSize;
+	BucketHeap* bucketHeap = new BucketHeap();
+	std::cout<<"input sources has "<<inputSize<<std::endl;
 
-	///// SERIAL TEST
-	//	thrust::device_vector<int> d_test_vec(inputSize);
-	//		for(int i=0;i<inputSize;i++)
-	//		{
-	//
-	//
-	//			BH_insertSerail<int><<<1,1>>>(bh,
-	//					raw_pointer_cast(&d_srcNode[i]),
-	//					raw_pointer_cast(&d_test_vec[0]));
-	//
-	//							bh.printAllItems();
-	//			//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
-	//			//	    bucketHeap->printBucketCPU();
-	//		}
-	//
-	//		for(int i=0;i<inputSize;i++)
-	//		{
-	//			BH_extractSerail<int><<<1,1>>>(bh,
-	//					raw_pointer_cast(&d_test_vec[i]));
-	//
-	//			bh.printAllItems();
-	//			int out=d_test_vec[i];
-	//			printf("extracted min is %d \n",out);
-	//			int B0Size=bh.bucSizes_shared[0];
-	//			if(B0Size==0)
-	//				break;
-	//		}
+	ParBucketHeap<int> bh(nodes+2,1);
+	int block_size=1;
+	int grid_size=bh.max_levels;
+
+	/// SERIAL TEST
+		thrust::device_vector<int> d_test_vec(inputSize);
+			for(int i=0;i<inputSize;i++)
+			{
+
+
+				BH_insertSerail<int><<<1,1>>>(bh,
+						raw_pointer_cast(&d_srcNode[i]),
+						raw_pointer_cast(&d_test_vec[0]));
+
+								bh.printAllItems();
+				//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
+				//	    bucketHeap->printBucketCPU();
+			}
+
+			for(int i=0;i<inputSize;i++)
+			{
+				BH_extractSerail<int><<<1,1>>>(bh,
+						raw_pointer_cast(&d_test_vec[i]));
+
+				bh.printAllItems();
+				int out=d_test_vec[i];
+				printf("extracted min is %d \n",out);
+				int B0Size=bh.bucSizes_shared[0];
+				if(B0Size==0)
+					break;
+			}
 
 	///// MUTEX TEST
 	//	thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
@@ -270,33 +270,33 @@ int parDijkstra(std::vector<int> &srcNode,
 
 
 	///// Pardjikstra
-	ParBucketHeap<int> bh(cuGraph.numVertices,1);
-	int block_size=1;
-	int grid_size=bh.max_levels;
+//	ParBucketHeap<int> bh(cuGraph.numVertices,1);
+//	int block_size=1;
+//	int grid_size=bh.max_levels;
+//
+//	bool *finished;
+//	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
+//	CUDA_DEV_MEMSET(finished,0,sizeof(int));
+//	int* d_destination;
+//	CUDA_ALLOC_DEV_MEM(&d_destination,sizeof(int));
+//	CUDA_MEMCPY_H2D(d_destination,&destination,sizeof(int));
+//
+//
+//	BH_iter<int><<<grid_size,block_size>>>(bh,
+//			inputSize, cuGraph.numEdges, cuGraph.numVertices,
+//			raw_pointer_cast(&d_srcNode[0]),
+//			raw_pointer_cast(&d_distance[0]),
+//			raw_pointer_cast(&d_adjLists[0]),
+//			raw_pointer_cast(&d_edgesOffset[0]),
+//			raw_pointer_cast(&d_edgesSize[0]),
+//			raw_pointer_cast(&d_settled[0]),
+//			 finished,
+//			destination);
+//	CUDA_FREE_DEV_MEM(d_destination);
+//	CUDA_FREE_DEV_MEM(finished);
 
-	bool *finished;
-	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
-	CUDA_DEV_MEMSET(finished,0,sizeof(int));
-	int* d_destination;
-	CUDA_ALLOC_DEV_MEM(&d_destination,sizeof(int));
-	CUDA_MEMCPY_H2D(d_destination,&destination,sizeof(int));
-
-
-	BH_iter<int><<<grid_size,block_size>>>(bh,
-			inputSize, cuGraph.numEdges, cuGraph.numVertices,
-			raw_pointer_cast(&d_srcNode[0]),
-			raw_pointer_cast(&d_distance[0]),
-			raw_pointer_cast(&d_adjLists[0]),
-			raw_pointer_cast(&d_edgesOffset[0]),
-			raw_pointer_cast(&d_edgesSize[0]),
-			raw_pointer_cast(&d_settled[0]),
-			 finished,
-			destination);
-	CUDA_FREE_DEV_MEM(d_destination);
-	CUDA_FREE_DEV_MEM(finished);
-
-	int dest_dist=d_distance[destination];
-	std::cout<<"finaldist= "<<dest_dist;
+//	int dest_dist=d_distance[destination];
+//	std::cout<<"finaldist= "<<dest_dist;
 
 
 	return 0;

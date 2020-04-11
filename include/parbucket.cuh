@@ -21,7 +21,24 @@ struct __align__(16) VoxBucketItem {
 };
 
 
-
+template <class Ktype>
+__global__ void predicate(VoxBucketItem<Ktype> *Bi, int szBi, int* nonEqual)
+{
+	int thid=blockIdx.x*blockDim.x+threadIdx.x;
+	if(thid==0)
+	{
+		nonEqual[0]=1;
+	}
+	else if(thid<szBi)
+	{
+		int this_key=Bi[thid].key;
+		int last_key=Bi[thid-1].key;
+		nonEqual[thid]=(this_key==last_key)?0:1;
+		//		int dbg=nonEqual[thid];
+		//		if(dbg!=0&&dbg!=1)
+		//			assert(false);
+	}
+}
 
 template <class Ktype>
 struct ParBucketHeapBase
@@ -251,7 +268,7 @@ struct ParBucketHeapBase
 
 			Merge(Si,Bi,d_active_signals[level],d_active_buckets[level]);
 			clearS(Si,d_active_signals[level]);
-			DelDupOnBucket(level);
+			DelDupOnBucketPar(level);
 
 			int p_i_old=getMaxPriorityOnBucket(level);  // MAY BE SLOW
 			int num=smallerPonBucket(level,p_i_old);
@@ -421,6 +438,69 @@ struct ParBucketHeapBase
 		}
 		// new active size of Bi= last idx+1
 		szBi=i+1;
+	}
+	__device__
+	void DelDupOnBucketPar(int lv)
+	{
+		// identify, delete, compress--- scan and prefix sum
+
+		int &szBi=d_active_buckets[lv];
+		if(szBi<=1)
+			return;
+		VoxBucketItem<Ktype> *Bi=getBucItem(lv,0);
+
+		int *pred=(int*)malloc(sizeof(int)*szBi);
+		if(pred==NULL)
+			assert(false); // insufficient mem
+		int blk_size=256;
+		int grid_size=(szBi%blk_size==0)?(szBi/blk_size):(szBi/blk_size+1);//ceil(1.0f*szBi/blk_size);
+		predicate<<<grid_size,blk_size>>>(Bi,szBi,pred);
+
+		//		printData(pred,szBi);
+
+		int *d_scan=(int*)malloc(sizeof(int)*szBi);
+		int finalSize=PrefixSum(d_scan,pred,szBi);
+
+		//		printData(d_scan,szBi);
+
+		//		moveElemInplace<int><<<grid_size,blk_size>>>(Bi,d_scan,pred,szBi);
+		moveElemSerial(Bi,d_scan,pred,szBi);
+
+
+		d_active_buckets[lv]=finalSize;
+//		__syncthreads();
+
+//		int cnt=10000;
+//		while(cnt)
+//		{
+//			cnt--;
+//		}
+//		int *d_scanS=(int*)malloc(sizeof(int)*szBi);
+//		int finalSizeS=serailScan(d_scanS,pred,szBi);
+		//		if(finalSizeS!=finalSize)
+		//		{
+		//			checkSame(d_scan,d_scanS,min(finalSize,finalSizeS));
+		//		}else
+		//			checkSame(d_scan,d_scanS,finalSizeS);
+
+//		free(d_scanS);
+		free(pred);
+		free(d_scan);
+	}
+	__device__
+	void moveElemSerial(VoxBucketItem<Ktype>* Bi, int* d_scan, int* d_pred, int numElems)
+	{
+		for(int i=0;i<numElems;i++)
+		{
+			int pos;
+			if(d_pred[i]==1)
+				pos=d_scan[i];
+			else if(d_pred[i]==0)
+				continue;
+			else
+				assert(false);
+			Bi[pos].setVal(Bi[i].key,Bi[i].priority); // pos undefined, scan err
+		}
 	}
 	__device__
 	void clearS(VoxBucketItem<Ktype> *Si,int &szSi)
