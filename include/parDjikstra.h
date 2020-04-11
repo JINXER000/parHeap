@@ -17,11 +17,12 @@ struct Graph {
     int numEdges = 0;
 };
 
+namespace parheap{
 int parDijkstra(std::vector<int> &srcNode,
 		Graph<AdjacentNode> &cuGraph,
 		std::vector<int> &distances,
 		int destination);
 
-
+}
 
 #endif /* PARDJIKSTRA_H_ */

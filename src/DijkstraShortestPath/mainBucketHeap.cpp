@@ -116,7 +116,7 @@ int main(){
 				bucketHeap->update(n.terminalVertex, distance[n.terminalVertex]);
 			}
 		}
-//		bucketHeap->printBucketCPU();
+		//		bucketHeap->printBucketCPU();
 		// version 2
 		//        for(struct neighbor n: parsedGraph.at(currentVertex.key).nbrs)
 		//        {
@@ -134,28 +134,28 @@ int main(){
 	cout << duration.count() << endl;
 
 	// another implementation
-	  BucketPrioQueue<int> open;
-		for (int i = 0 ; i < numVertices ; i++) {
-			if (i == startVertex){
-				open.push(0,i);
-				distance[i] = 0;
-			} else {
-				open.push(INT_MAX-1,i);
-				distance[i] = INT_MAX-1;
-			}
+	BucketPrioQueue<int> open;
+	for (int i = 0 ; i < numVertices ; i++) {
+		if (i == startVertex){
+			open.push(0,i);
+			distance[i] = 0;
+		} else {
+			open.push(INT_MAX-1,i);
+			distance[i] = INT_MAX-1;
 		}
-		while (!open.empty()) {
-			int cur_key = open.pop();
+	}
+	while (!open.empty()) {
+		int cur_key = open.pop();
 
-			if (cur_key == destination) break;
-			for (struct AdjacentNode n : adjList[cur_key]) {
-				if (distance[n.terminalVertex] > distance[cur_key] + n.weight) {
-					distance[n.terminalVertex] = distance[cur_key] + n.weight;
-					open.push(distance[n.terminalVertex],n.terminalVertex);
-				}
+		if (cur_key == destination) break;
+		for (struct AdjacentNode n : adjList[cur_key]) {
+			if (distance[n.terminalVertex] > distance[cur_key] + n.weight) {
+				distance[n.terminalVertex] = distance[cur_key] + n.weight;
+				open.push(distance[n.terminalVertex],n.terminalVertex);
 			}
 		}
-			cout << distance[destination] << endl;
+	}
+	cout << distance[destination] << endl;
 #else
 
 
@@ -171,28 +171,28 @@ int main(){
 	}
 	// GPU test
 	std::vector<int> srcNode;
-	    for (int i = 0 ; i < numVertices ; i++) {
-	        if (i == startVertex){
-	        	srcNode.push_back(i);
-	            distance[i] = 0;
-	        }else
-	        {
-	        	distance[i] = INT_MAX-1;
-	        }
-	    }
-//	int inputSize=78;
-//	for(int i=0;i<inputSize;i++)
-//	{
-//		if(i>5&&i<10)
-//			srcNode.push_back(0);
-//		else
-//			srcNode.push_back(i+1);
-//	}
+	for (int i = 0 ; i < numVertices ; i++) {
+		if (i == startVertex){
+			srcNode.push_back(i);
+			distance[i] = 0;
+		}else
+		{
+			distance[i] = INT_MAX-1;
+		}
+	}
+	//	int inputSize=78;
+	//	for(int i=0;i<inputSize;i++)
+		//	{
+	//		if(i>5&&i<10)
+	//			srcNode.push_back(0);
+	//		else
+	//			srcNode.push_back(i+1);
+	//	}
 
-	parDijkstra(srcNode,cuGraph,distance,destination);
+	parheap::parDijkstra(srcNode,cuGraph,distance,destination);
 
 
 
 #endif
-return 0;
+	return 0;
 }

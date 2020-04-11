@@ -5,6 +5,7 @@
 #include "BucketHeap.h"
 #include "BucketSignal.h"
 
+namespace parheap{
 template <class Ktype>
 __global__
 void BH_insertTest(ParBucketHeap<Ktype> bh,
@@ -300,5 +301,5 @@ int parDijkstra(std::vector<int> &srcNode,
 
 	return 0;
 }
-
+}
 

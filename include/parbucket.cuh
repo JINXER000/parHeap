@@ -6,7 +6,7 @@
 #include "atomicLock.h"
 
 
-
+namespace parheap{
 template <class Ktype>
 struct __align__(16) VoxBucketItem {
 	Ktype key;
@@ -43,6 +43,8 @@ struct ParBucketHeapBase
 	int* d_priorities;
 	int *d_active_buckets;
 	int *d_active_signals;
+	int *d_max_buckets;
+	int *d_max_signals;
 	int *d_timestamps;
 
 	// mutex,length==levels/2
@@ -253,7 +255,7 @@ struct ParBucketHeapBase
 
 			int p_i_old=getMaxPriorityOnBucket(level);  // MAY BE SLOW
 			int num=smallerPonBucket(level,p_i_old);
-			int properSize=pow(2,2*level+1);
+			int properSize=d_max_buckets[level];
 			if(num>properSize)
 			{
 
@@ -275,7 +277,7 @@ struct ParBucketHeapBase
 		NonEmptyBucketSignal(level);
 		// fill if needed
 		int BiSize=d_active_buckets[level];
-		if(BiSize<pow(2,2*level+1)&&level<*q)// Bi not enough, level is not largest non_empty
+		if(BiSize<d_max_buckets[level]&&level<*q)// Bi not enough, level is not largest non_empty
 		{
 
 			VoxBucketItem<Ktype>* BiPlus1=getBucItem(level+1,0);
@@ -286,7 +288,7 @@ struct ParBucketHeapBase
 			DelDupOnBucket(level+1);
 			maintainPriorityOn(BiPlus1,level+1);
 
-			int properSize=pow(2,2*level+1)-BiSize;
+			int properSize=d_max_buckets[level]-BiSize;
 
 			int numFill=SelectP(level+1,properSize,d_priorities[level]);
 
@@ -606,6 +608,8 @@ public:
 	typename vector_type<int,memspace>::type priorities_shared;
 	typename vector_type<int,memspace>::type sigSizes_shared;
 	typename vector_type<int,memspace>::type bucSizes_shared;
+	typename vector_type<int,memspace>::type maxSigSizes_shared;
+	typename vector_type<int,memspace>::type maxBucSizes_shared;
 	typename vector_type<int,memspace>::type sigOffsets_shared;
 	typename vector_type<int,memspace>::type bucOffsets_shared;
 	typename vector_type<VoxBucketItem<Ktype>,memspace>::type bucketSignals_shared;
@@ -616,6 +620,7 @@ public:
 			parent_type(n_,max_levels,d_),locks_shared(max_levels),
 			times_shared(max_levels),priorities_shared(max_levels),
 			sigSizes_shared(max_levels),bucSizes_shared(max_levels),
+			maxSigSizes_shared(max_levels),maxBucSizes_shared(max_levels),
 			sigOffsets_shared(max_levels),bucOffsets_shared(max_levels),
 			dbg_shared(max_levels)
 	{
@@ -628,15 +633,17 @@ public:
 
 		sigOffsets_shared[0]=0;
 		bucOffsets_shared[0]=2;
+		maxSigSizes_shared[0]=bulkSize;
+		maxBucSizes_shared[0]=2*bulkSize;
 		for(int lv=1;lv<max_levels;lv++)
 		{
-			//			int bucketCapacity = d*pow(2, (2*id+2));     // Bi
-			//			int signalCapacity = d*pow(2, (2*id+1)); // Si+1
+			maxSigSizes_shared[lv]=bulkSize*pow(2,2*lv);
+			maxBucSizes_shared[lv]=bulkSize*pow(2,2*lv+1);
 			// however, we double the size for temporal flow like Merge()
 
 			// sig offset(current) = buck offset(last) +bucSize(last)
-			sigOffsets_shared[lv]=bucOffsets_shared[lv-1]+bulkSize*pow(2, 2*lv);  //lv=1.start from 6
-			bucOffsets_shared[lv]=sigOffsets_shared[lv]+bulkSize*pow(2, 2*lv+1);  //lv=1,start from 14
+			sigOffsets_shared[lv]=bucOffsets_shared[lv-1]+maxBucSizes_shared[lv-1]*2;  //lv=1.start from 6
+			bucOffsets_shared[lv]=sigOffsets_shared[lv]+maxSigSizes_shared[lv]*2;  //lv=1,start from 14
 
 		}
 		int total_elems=bucOffsets_shared[max_levels-1]+bulkSize*pow(2, 2*max_levels-1);
@@ -653,6 +660,8 @@ public:
 		this->bucketSignals=raw_pointer_cast(&bucketSignals_shared[0]);
 		this->q=raw_pointer_cast(&activeLVs_shared[0]);
 		this->d_mem=raw_pointer_cast(&dbg_shared[0]);
+		this->d_max_signals=raw_pointer_cast(&maxSigSizes_shared[0]);
+		this->d_max_buckets=raw_pointer_cast(&maxBucSizes_shared[0]);
 
 
 	}
@@ -689,12 +698,8 @@ public:
 			std::cout<<std::endl;
 
 		}
-
-
-
 	}
-
-
 };
+}
 
 
