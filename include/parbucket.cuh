@@ -302,7 +302,7 @@ struct ParBucketHeapBase
 
 			Merge(SiPlus1,BiPlus1,d_active_signals[level+1],d_active_buckets[level+1]);
 			clearS(SiPlus1,d_active_signals[level+1]);
-			DelDupOnBucket(level+1);
+			DelDupOnBucketPar(level+1);
 			maintainPriorityOn(BiPlus1,level+1);
 
 			int properSize=d_max_buckets[level]-BiSize;
@@ -456,34 +456,18 @@ struct ParBucketHeapBase
 		int grid_size=(szBi%blk_size==0)?(szBi/blk_size):(szBi/blk_size+1);//ceil(1.0f*szBi/blk_size);
 		predicate<<<grid_size,blk_size>>>(Bi,szBi,pred);
 
-		//		printData(pred,szBi);
-
 		int *d_scan=(int*)malloc(sizeof(int)*szBi);
+		if(d_scan==NULL)
+			assert(false); // insufficient mem
+		int test1=d_scan[0];
+		int test2=pred[0];
 		int finalSize=PrefixSum(d_scan,pred,szBi);
-
-		//		printData(d_scan,szBi);
 
 		//		moveElemInplace<int><<<grid_size,blk_size>>>(Bi,d_scan,pred,szBi);
 		moveElemSerial(Bi,d_scan,pred,szBi);
 
 
 		d_active_buckets[lv]=finalSize;
-//		__syncthreads();
-
-//		int cnt=10000;
-//		while(cnt)
-//		{
-//			cnt--;
-//		}
-//		int *d_scanS=(int*)malloc(sizeof(int)*szBi);
-//		int finalSizeS=serailScan(d_scanS,pred,szBi);
-		//		if(finalSizeS!=finalSize)
-		//		{
-		//			checkSame(d_scan,d_scanS,min(finalSize,finalSizeS));
-		//		}else
-		//			checkSame(d_scan,d_scanS,finalSizeS);
-
-//		free(d_scanS);
 		free(pred);
 		free(d_scan);
 	}

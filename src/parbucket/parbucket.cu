@@ -221,51 +221,51 @@ int parDijkstra(std::vector<int> &srcNode,
 	int grid_size=bh.max_levels;
 
 	/// SERIAL TEST
-		thrust::device_vector<int> d_test_vec(inputSize);
-			for(int i=0;i<inputSize;i++)
-			{
-
-
-				BH_insertSerail<int><<<1,1>>>(bh,
-						raw_pointer_cast(&d_srcNode[i]),
-						raw_pointer_cast(&d_test_vec[0]));
-
-								bh.printAllItems();
-				//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
-				//	    bucketHeap->printBucketCPU();
-			}
-
-			for(int i=0;i<inputSize;i++)
-			{
-				BH_extractSerail<int><<<1,1>>>(bh,
-						raw_pointer_cast(&d_test_vec[i]));
-
-				bh.printAllItems();
-				int out=d_test_vec[i];
-				printf("extracted min is %d \n",out);
-				int B0Size=bh.bucSizes_shared[0];
-				if(B0Size==0)
-					break;
-			}
+//		thrust::device_vector<int> d_test_vec(inputSize);
+//			for(int i=0;i<inputSize;i++)
+//			{
+//
+//
+//				BH_insertSerail<int><<<1,1>>>(bh,
+//						raw_pointer_cast(&d_srcNode[i]),
+//						raw_pointer_cast(&d_test_vec[0]));
+//
+//								bh.printAllItems();
+//				//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
+//				//	    bucketHeap->printBucketCPU();
+//			}
+//
+//			for(int i=0;i<inputSize;i++)
+//			{
+//				BH_extractSerail<int><<<1,1>>>(bh,
+//						raw_pointer_cast(&d_test_vec[i]));
+//
+//				bh.printAllItems();
+//				int out=d_test_vec[i];
+//				printf("extracted min is %d \n",out);
+//				int B0Size=bh.bucSizes_shared[0];
+//				if(B0Size==0)
+//					break;
+//			}
 
 	///// MUTEX TEST
-	//	thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
-	//	bool *finished;
-	//	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
-	//	CUDA_DEV_MEMSET(finished,0,sizeof(int));
-	//	BH_insertTest<int><<<grid_size,block_size>>>(bh,
-	//			raw_pointer_cast(&d_srcNode[0]),
-	//			raw_pointer_cast(&d_outNodes[0]),
-	//			nodes,finished);
-	//	CUDA_FREE_DEV_MEM(finished);
-	//
-	//	bh.printAllItems();
-	//
-	//	for(int i=0;i<inputSize;i++)
-	//	{
-	//		VoxBucketItem<int> item=d_outNodes[i];
-	//		std::cout<<"("<<item.key<<", "<<item.priority<<")";
-	//	}
+		thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
+		bool *finished;
+		CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
+		CUDA_DEV_MEMSET(finished,0,sizeof(int));
+		BH_insertTest<int><<<grid_size,block_size>>>(bh,
+				raw_pointer_cast(&d_srcNode[0]),
+				raw_pointer_cast(&d_outNodes[0]),
+				nodes,finished);
+		CUDA_FREE_DEV_MEM(finished);
+
+		bh.printAllItems();
+
+		for(int i=0;i<inputSize;i++)
+		{
+			VoxBucketItem<int> item=d_outNodes[i];
+			std::cout<<"("<<item.key<<", "<<item.priority<<")";
+		}
 
 
 
@@ -294,7 +294,7 @@ int parDijkstra(std::vector<int> &srcNode,
 //			destination);
 //	CUDA_FREE_DEV_MEM(d_destination);
 //	CUDA_FREE_DEV_MEM(finished);
-
+//
 //	int dest_dist=d_distance[destination];
 //	std::cout<<"finaldist= "<<dest_dist;
 

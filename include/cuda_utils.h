@@ -75,7 +75,7 @@ struct vector_type<T, device_memspace> {
 };
 
 
-__global__ void adjustInc(int *d_out,int* d_inc,int numElems,bool* finished)
+__global__ void adjustInc(int *d_out,int* d_inc,int numElems)
 {
 	int id=(blockIdx.x*blockDim.x+threadIdx.x)*2;
 	if(id<numElems)
@@ -86,10 +86,9 @@ __global__ void adjustInc(int *d_out,int* d_inc,int numElems,bool* finished)
 	{
 		d_out[id+1]+=d_inc[blockIdx.x];
 	}
-	finished[blockIdx.x]=true;
 }
 
-__global__ void ExclusiveScan(int  *d_out, const int* d_in, size_t input_size, int* blockSums,bool* finished)
+__global__ void ExclusiveScan(int  *d_out, const int* d_in, size_t input_size, int* blockSums)
 {
 	extern __shared__ int data[];
 	int tid = threadIdx.x;
@@ -137,82 +136,45 @@ __global__ void ExclusiveScan(int  *d_out, const int* d_in, size_t input_size, i
 	if (tid == 0) {
 		blockSums[blockIdx.x] = data[blockDim.x * 2 - 1];// 3
 		if(abs_start + blockDim.x * 2 - 1<input_size)blockSums[blockIdx.x]+=d_in[abs_start + blockDim.x * 2 - 1];//3+3=6
-		finished[blockIdx.x]=true;
-		bool fi=finished[blockIdx.x];
-		//		if(blockSums[blockIdx.x]==0)
-		//		{
-		//			printf("ffffff");
-		//		}
-		//		if(input_size==10)
-		//		{
-		//			printf("dbg here");
-		//		}
 
 	}
 
 }
 
-__device__
-void assertFinished(bool* finished,int size)
-{
-	bool release=true;
-	do
-	{
-		for(int i=0;i<size;i++)
-		{
-			if(!finished[i])
-			{
-				release=false;
 
-			printf("block %d not finished\n",i);
-			}
-
-		}
-	}while(release==false);
-	// for next use
-	for(int i=0;i<size;i++)
-	{
-		finished[i]=false;
-	}
-}
 __device__
 int PrefixSum(int* d_scan, int *d_pred, int numElems)
 {
 	int block_size=256;
 	int num_double_blocks=(numElems%(2*block_size)==0)?(numElems/(2*block_size)):(numElems/(2*block_size)+1);//ceil(1.0f*numElems/(2*block_size));
 	int* d_blk_offsets=(int*)malloc(sizeof(int)*num_double_blocks);
-	//	if(numElems==10)
-	//		printf("dbg here");
-	bool* finished=(bool*)malloc(sizeof(bool)*num_double_blocks);
-	for(int i=0;i<num_double_blocks;i++)
-	{
-		finished[i]=false;
-	}
-	ExclusiveScan<<<num_double_blocks,block_size,2*block_size*sizeof(int)>>>
-			(d_scan,d_pred,numElems,d_blk_offsets,finished);
-	assertFinished(finished,num_double_blocks);
+	if(d_blk_offsets==NULL)
+		assert(false); // insufficient mem
 
+	int test1=d_scan[0];
+	int test2=d_pred[0];
+	int test3=d_blk_offsets[0];
+	ExclusiveScan<<<num_double_blocks,block_size,2*block_size*sizeof(int)>>>
+			(d_scan,d_pred,numElems,d_blk_offsets);
+	// without this, parent cannot see the operation made by child
+	cudaDeviceSynchronize();
 
 	int finalSum;
 	if(num_double_blocks>1)
 	{
 		int* d_scan_temp=(int*)malloc(sizeof(int)*num_double_blocks);
+		if(d_scan_temp==NULL)
+			assert(false); // insufficient mem
 		finalSum=PrefixSum(d_scan_temp,d_blk_offsets,num_double_blocks);
 
-		adjustInc<<<num_double_blocks,block_size>>>(d_scan,d_scan_temp,numElems,finished);
-		assertFinished(finished,num_double_blocks);
+		adjustInc<<<num_double_blocks,block_size>>>(d_scan,d_scan_temp,numElems);
+		cudaDeviceSynchronize();
 		free(d_scan_temp);
 	}else
 	{
 		finalSum=d_blk_offsets[0];
 	}
 	free(d_blk_offsets);
-	free(finished);
-	if(finalSum==0)
-	{
-		printf("ffffff");
-	}
-
 	return finalSum;
 }
 
