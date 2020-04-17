@@ -28,6 +28,7 @@ int main(){
 	struct BucketItem currentVertex;
 	int startVertex = 56, destination = 340;
 	int numVertices,numEdges;
+		int total_rounds=0;
 
 	inputFileName = "input/NetworkScienceGiantComponent.txt";
 	openFileToAccess< std::ifstream >( inputFile, inputFileName );
@@ -95,43 +96,42 @@ int main(){
 #ifndef USE_GPU
 	BucketHeap* bucketHeap = new BucketHeap();
 	auto start = high_resolution_clock::now();
-	for (int i = 0 ; i < numVertices ; i++) {
-		if (i == startVertex){
-			bucketHeap->update(i, 0);
-			distance[i] = 0;
-		} else {
-			bucketHeap->update(i, INT_MAX-1);
-			distance[i] = INT_MAX-1;
-		}
-	}
+//	for (int i = 0 ; i < numVertices ; i++) {
+//		if (i == startVertex){
+//			bucketHeap->update(i, 0);
+//			distance[i] = 0;
+//		} else {
+//			bucketHeap->update(i, INT_MAX-1);
+//			distance[i] = INT_MAX-1;
+//		}
+//		total_rounds++;
+//	}
+//
+//	while (!bucketHeap->isEmpty()) {
+//		currentVertex = bucketHeap->deleteMin();
+//		total_rounds++;
+//		if (currentVertex.key == destination) break;
+//		// version 1
+//		for (struct AdjacentNode n : adjList[currentVertex.key]) {
+//			if (distance[n.terminalVertex] > currentVertex.priority + n.weight) {
+//				distance[n.terminalVertex] = currentVertex.priority + n.weight;
+//				bucketHeap->update(n.terminalVertex, distance[n.terminalVertex]);
+//			}
+//		}
+//		//		bucketHeap->printBucketCPU();
+//		// version 2
+//		//        for(struct neighbor n: parsedGraph.at(currentVertex.key).nbrs)
+//		//        {
+//		//            if(distance[n.dstIndex]>currentVertex.priority+n.weight)
+//		//            {
+//		//                distance[n.dstIndex]=currentVertex.priority+n.weight;
+//		//                bucketHeap->update(n.dstIndex, distance[n.dstIndex]);
+//		//            }
+//		//        }
+//	}
+//	cout << distance[destination] << endl;
 
-	while (!bucketHeap->isEmpty()) {
-		currentVertex = bucketHeap->deleteMin();
 
-		if (currentVertex.key == destination) break;
-		// version 1
-		for (struct AdjacentNode n : adjList[currentVertex.key]) {
-			if (distance[n.terminalVertex] > currentVertex.priority + n.weight) {
-				distance[n.terminalVertex] = currentVertex.priority + n.weight;
-				bucketHeap->update(n.terminalVertex, distance[n.terminalVertex]);
-			}
-		}
-		//		bucketHeap->printBucketCPU();
-		// version 2
-		//        for(struct neighbor n: parsedGraph.at(currentVertex.key).nbrs)
-		//        {
-		//            if(distance[n.dstIndex]>currentVertex.priority+n.weight)
-		//            {
-		//                distance[n.dstIndex]=currentVertex.priority+n.weight;
-		//                bucketHeap->update(n.dstIndex, distance[n.dstIndex]);
-		//            }
-		//        }
-	}
-	cout << distance[destination] << endl;
-
-	auto stop = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>(stop - start);
-	cout << duration.count() << endl;
 
 	// another implementation
 	BucketPrioQueue<int> open;
@@ -143,10 +143,11 @@ int main(){
 			open.push(INT_MAX-1,i);
 			distance[i] = INT_MAX-1;
 		}
+		total_rounds++;
 	}
 	while (!open.empty()) {
 		int cur_key = open.pop();
-
+		total_rounds++;
 		if (cur_key == destination) break;
 		for (struct AdjacentNode n : adjList[cur_key]) {
 			if (distance[n.terminalVertex] > distance[cur_key] + n.weight) {
@@ -155,7 +156,11 @@ int main(){
 			}
 		}
 	}
+	auto stop = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(stop - start);
+	cout << duration.count() << endl;
 	cout << distance[destination] << endl;
+	std::cout<<"total rounds= "<<total_rounds<<std::endl;
 #else
 
 
@@ -171,27 +176,29 @@ int main(){
 	}
 	// GPU test
 	std::vector<int> srcNode;
-//	for (int i = 0 ; i < numVertices ; i++) {
-//		if (i == startVertex){
-//			srcNode.push_back(i);
-//			distance[i] = 0;
-//		}else
-//		{
-//			distance[i] = INT_MAX-1;
-//		}
-//	}
-		int inputSize=78;
-		for(int i=0;i<inputSize;i++)
-			{
-			if(i>5&&i<10)
-				srcNode.push_back(0);
-			else
-				srcNode.push_back(i+1);
+	for (int i = 0 ; i < numVertices ; i++) {
+		if (i == startVertex){
+			srcNode.push_back(i);
+			distance[i] = 0;
+		}else
+		{
+			distance[i] = INT_MAX-1;
 		}
-
+	}
+//		int inputSize=78;
+//		for(int i=0;i<inputSize;i++)
+//			{
+//			if(i>5&&i<10)
+//				srcNode.push_back(0);
+//			else
+//				srcNode.push_back(i+1);
+//		}
+	auto start = high_resolution_clock::now();
 	parheap::parDijkstra(srcNode,cuGraph,distance,destination);
 
-
+	auto stop = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(stop - start);
+	std::cout << duration.count() << std::endl;
 
 #endif
 	return 0;

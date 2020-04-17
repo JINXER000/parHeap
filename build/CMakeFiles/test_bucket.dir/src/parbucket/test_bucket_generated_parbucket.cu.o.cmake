@@ -70,11 +70,11 @@ set(generated_file_internal "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/
 set(generated_cubin_file_internal "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/./test_bucket_generated_parbucket.cu.o.cubin.txt") # path
 
 set(CUDA_NVCC_EXECUTABLE "/usr/local/cuda-9.0/bin/nvcc") # path
-set(CUDA_NVCC_FLAGS -g;-G;-arch=sm_61;-ftz=true;-rdc=true;-std=c++11 ;; ) # list
+set(CUDA_NVCC_FLAGS -arch=sm_61;-O3;-use_fast_math;-ftz=true;-prec-div=false;-prec-sqrt=false;-rdc=true;-std=c++11 ;; ) # list
 # Build specific configuration flags
+set(CUDA_NVCC_FLAGS_RELEASE  ; )
 set(CUDA_NVCC_FLAGS_DEBUG  ; )
 set(CUDA_NVCC_FLAGS_MINSIZEREL  ; )
-set(CUDA_NVCC_FLAGS_RELEASE  ; )
 set(CUDA_NVCC_FLAGS_RELWITHDEBINFO  ; )
 set(nvcc_flags -m64) # list
 set(CUDA_NVCC_INCLUDE_ARGS "-I/usr/local/cuda-9.0/include;-I/usr/include/eigen3;-I/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/./include;-I/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/./src/DijkstraShortestPath;-I/usr/local/cuda-9.0/include") # list (needs to be in quotes to handle spaces properly).
@@ -88,9 +88,9 @@ endif()
 # This is the list of host compilation flags.  It C or CXX should already have
 # been chosen by FindCUDA.cmake.
 set(CMAKE_HOST_FLAGS  )
+set(CMAKE_HOST_FLAGS_RELEASE -O3 -DNDEBUG)
 set(CMAKE_HOST_FLAGS_DEBUG -g)
 set(CMAKE_HOST_FLAGS_MINSIZEREL -Os -DNDEBUG)
-set(CMAKE_HOST_FLAGS_RELEASE -O3 -DNDEBUG)
 set(CMAKE_HOST_FLAGS_RELWITHDEBINFO -O2 -g -DNDEBUG)
 
 # Take the compiler flags and package them up to be sent to the compiler via -Xcompiler

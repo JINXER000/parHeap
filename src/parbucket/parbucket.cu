@@ -2,8 +2,6 @@
 #include "parDjikstra.h"
 #include "utils.h"
 
-#include "BucketHeap.h"
-#include "BucketSignal.h"
 
 namespace parheap{
 template <class Ktype>
@@ -27,6 +25,7 @@ void BH_insertTest(ParBucketHeap<Ktype> bh,
 		{
 			bh.extractMinRes(eOutVec[i]);
 		}
+//		bh.fillZero(eInVec,vec_num);
 		*finished=true;
 	}else
 	{
@@ -82,12 +81,14 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 				init_priority=INT_MAX-1;
 			}
 			bh.updateRes(iv,init_priority);
+			bh.d_mem[0]++; // cnt count
 			distance[iv]=init_priority;
 		}
 		VoxBucketItem<Ktype> eOut;
 		for(int round=0;round<numVertices;round++)
 		{
 			bh.extractMinRes(eOut);
+			bh.d_mem[0]++; // cnt count
 			// check finish
 			if(eOut.key==destination)
 			{
@@ -180,6 +181,7 @@ void BH_extractSerail(ParBucketHeap<Ktype> bh,
 
 
 
+
 int parDijkstra(std::vector<int> &srcNode,
 		Graph<AdjacentNode> &cuGraph,
 		std::vector<int> &distances,
@@ -212,13 +214,13 @@ int parDijkstra(std::vector<int> &srcNode,
 	thrust::device_vector<bool> d_settled(cuGraph.numVertices);
 
 	// INIT BUCKET HEAP
-	int nodes=inputSize;
-	BucketHeap* bucketHeap = new BucketHeap();
-	std::cout<<"input sources has "<<inputSize<<std::endl;
-
-	ParBucketHeap<int> bh(nodes+2,1);
-	int block_size=1;
-	int grid_size=bh.max_levels;
+//	int nodes=inputSize;
+//	BucketHeap* bucketHeap = new BucketHeap();
+//	std::cout<<"input sources has "<<inputSize<<std::endl;
+//
+//	ParBucketHeap<int> bh(nodes+2,1);
+//	int block_size=1;
+//	int grid_size=bh.max_levels;
 
 	/// SERIAL TEST
 //		thrust::device_vector<int> d_test_vec(inputSize);
@@ -249,54 +251,59 @@ int parDijkstra(std::vector<int> &srcNode,
 //			}
 
 	///// MUTEX TEST
-		thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
-		bool *finished;
-		CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
-		CUDA_DEV_MEMSET(finished,0,sizeof(int));
-		BH_insertTest<int><<<grid_size,block_size>>>(bh,
-				raw_pointer_cast(&d_srcNode[0]),
-				raw_pointer_cast(&d_outNodes[0]),
-				nodes,finished);
-		CUDA_FREE_DEV_MEM(finished);
-
-		bh.printAllItems();
-
-		for(int i=0;i<inputSize;i++)
-		{
-			VoxBucketItem<int> item=d_outNodes[i];
-			std::cout<<"("<<item.key<<", "<<item.priority<<")";
-		}
+//		thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
+//		bool *finished;
+//		CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
+//		CUDA_DEV_MEMSET(finished,0,sizeof(int));
+//		BH_insertTest<int><<<grid_size,block_size>>>(bh,
+//				raw_pointer_cast(&d_srcNode[0]),
+//				raw_pointer_cast(&d_outNodes[0]),
+//				nodes,finished);
+//		CUDA_FREE_DEV_MEM(finished);
+//
+//		bh.printAllItems();
+//
+//		for(int i=0;i<inputSize;i++)
+//		{
+//			VoxBucketItem<int> item=d_outNodes[i];
+//			std::cout<<"("<<item.key<<", "<<item.priority<<")";
+//		}
 
 
 
 	///// Pardjikstra
-//	ParBucketHeap<int> bh(cuGraph.numVertices,1);
-//	int block_size=1;
-//	int grid_size=bh.max_levels;
-//
-//	bool *finished;
-//	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
-//	CUDA_DEV_MEMSET(finished,0,sizeof(int));
-//	int* d_destination;
-//	CUDA_ALLOC_DEV_MEM(&d_destination,sizeof(int));
-//	CUDA_MEMCPY_H2D(d_destination,&destination,sizeof(int));
-//
-//
-//	BH_iter<int><<<grid_size,block_size>>>(bh,
-//			inputSize, cuGraph.numEdges, cuGraph.numVertices,
-//			raw_pointer_cast(&d_srcNode[0]),
-//			raw_pointer_cast(&d_distance[0]),
-//			raw_pointer_cast(&d_adjLists[0]),
-//			raw_pointer_cast(&d_edgesOffset[0]),
-//			raw_pointer_cast(&d_edgesSize[0]),
-//			raw_pointer_cast(&d_settled[0]),
-//			 finished,
-//			destination);
-//	CUDA_FREE_DEV_MEM(d_destination);
-//	CUDA_FREE_DEV_MEM(finished);
-//
-//	int dest_dist=d_distance[destination];
-//	std::cout<<"finaldist= "<<dest_dist;
+	ParBucketHeap<int> bh(cuGraph.numVertices,1);
+	int block_size=1;
+	int grid_size=bh.max_levels;
+
+	bool *finished;
+	CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
+	CUDA_DEV_MEMSET(finished,0,sizeof(int));
+	int* d_destination;
+	CUDA_ALLOC_DEV_MEM(&d_destination,sizeof(int));
+	CUDA_MEMCPY_H2D(d_destination,&destination,sizeof(int));
+
+
+	BH_iter<int><<<grid_size,block_size>>>(bh,
+			inputSize, cuGraph.numEdges, cuGraph.numVertices,
+			raw_pointer_cast(&d_srcNode[0]),
+			raw_pointer_cast(&d_distance[0]),
+			raw_pointer_cast(&d_adjLists[0]),
+			raw_pointer_cast(&d_edgesOffset[0]),
+			raw_pointer_cast(&d_edgesSize[0]),
+			raw_pointer_cast(&d_settled[0]),
+			 finished,
+			destination);
+
+
+	CUDA_FREE_DEV_MEM(d_destination);
+	CUDA_FREE_DEV_MEM(finished);
+
+	int dest_dist=d_distance[destination];
+	std::cout<<"finaldist= "<<dest_dist<<std::endl;
+
+	int total_rounds=bh.dbg_shared[0];
+	std::cout<<"total rounds= "<<total_rounds<<std::endl;
 
 
 	return 0;

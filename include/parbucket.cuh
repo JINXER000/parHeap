@@ -34,11 +34,48 @@ __global__ void predicate(VoxBucketItem<Ktype> *Bi, int szBi, int* nonEqual)
 		int this_key=Bi[thid].key;
 		int last_key=Bi[thid-1].key;
 		nonEqual[thid]=(this_key==last_key)?0:1;
-		//		int dbg=nonEqual[thid];
-		//		if(dbg!=0&&dbg!=1)
-		//			assert(false);
 	}
 }
+template <class Ktype>
+__global__ void predicateMLB(VoxBucketItem<Ktype> *Bi, int szBi, int* pred, int priority)
+{
+	int thid=blockIdx.x*blockDim.x+threadIdx.x;
+	if(thid<szBi)
+	{
+		pred[thid]=(Bi[thid].priority<=priority)?0:1;
+	}
+}
+
+template<typename Ktype>
+__global__
+void moveElemShM(VoxBucketItem<Ktype>* oldAddr, VoxBucketItem<Ktype>* newAddr,
+		int* d_scan, int* d_pred, int numElems)
+{
+	extern __shared__ VoxBucketItem<Ktype> inputBuffer[];
+	int gid=threadIdx.x+blockIdx.x*blockDim.x;
+	int thid=threadIdx.x;
+	if(gid>=numElems)
+		return;
+
+	inputBuffer[thid].setVal(oldAddr[gid].key,oldAddr[gid].priority);
+	__syncthreads();
+
+	int pos;
+	if(d_pred[gid]==1)
+	{
+		pos=d_scan[gid];
+	}else
+		return;
+	if(pos>numElems)
+		return;
+	// if pos is in another block, this will result in problem...
+	//	while(Bi[pos].copied!=true)
+	//	{
+	//		printf("wtf???? block not in order");
+	//	}
+	newAddr[pos].setVal(inputBuffer[thid].key,inputBuffer[thid].priority);
+}
+
 
 template <class Ktype>
 struct ParBucketHeapBase
@@ -73,9 +110,10 @@ struct ParBucketHeapBase
 	VoxBucketItem<Ktype> *bucketSignals;
 
 	//	BSlevel<Ktype>* bs_levels;
-	ParBucketHeapBase(int n,int max_levels,int d_=1):d(d_),operationOK(0),maxLV(max_levels)
+	ParBucketHeapBase(int n,int d_=1):d(d_),operationOK(0)
 	{
-
+		maxLV=ceil(log(n/d)/log(4));
+		printf("max level is %d \n", maxLV);
 	}
 
 	__device__
@@ -268,7 +306,7 @@ struct ParBucketHeapBase
 
 			Merge(Si,Bi,d_active_signals[level],d_active_buckets[level]);
 			clearS(Si,d_active_signals[level]);
-			DelDupOnBucketPar(level);
+			DelDupOnBucket(level);
 
 			int p_i_old=getMaxPriorityOnBucket(level);  // MAY BE SLOW
 			int num=smallerPonBucket(level,p_i_old);
@@ -291,7 +329,7 @@ struct ParBucketHeapBase
 
 
 		}
-		NonEmptyBucketSignal(level);
+		//		NonEmptyBucketSignal(level);
 		// fill if needed
 		int BiSize=d_active_buckets[level];
 		if(BiSize<d_max_buckets[level]&&level<*q)// Bi not enough, level is not largest non_empty
@@ -302,7 +340,7 @@ struct ParBucketHeapBase
 
 			Merge(SiPlus1,BiPlus1,d_active_signals[level+1],d_active_buckets[level+1]);
 			clearS(SiPlus1,d_active_signals[level+1]);
-			DelDupOnBucketPar(level+1);
+			DelDupOnBucket(level+1);
 			maintainPriorityOn(BiPlus1,level+1);
 
 			int properSize=d_max_buckets[level]-BiSize;
@@ -329,14 +367,17 @@ struct ParBucketHeapBase
 		//////////// routine
 		// maintain the largest non empty level, see report p5
 		NonEmptyBucketSignal(level);
-//				printD(level);
+		//				printD(level);
 
 
 	}
+
 	__device__
 	int Resolve(int level)
 	{
-		// ??? put it at beginning?
+		//+++++++++++++++++++++
+		if(level>=maxLV)
+			return -1;
 
 		if(!metConstrain(level))
 		{
@@ -384,6 +425,52 @@ struct ParBucketHeapBase
 		Ssize=j;
 	}
 	__device__
+	void MoveLargerBackPar(VoxBucketItem<Ktype>* BAddr,VoxBucketItem<Ktype>* SAddr,
+			int pri,int &Bsize,int &Ssize)
+	{
+
+		if(Bsize<=1)
+			return;
+
+		int *pred=(int*)malloc(sizeof(int)*Bsize);
+		if(pred==NULL)
+			assert(false); // insufficient mem
+		int blk_size=256;
+		int grid_size=(Bsize%blk_size==0)?(Bsize/blk_size):(Bsize/blk_size+1);//ceil(1.0f*szBi/blk_size);
+		predicateMLB<<<grid_size,blk_size>>>(BAddr,Bsize,pred,pri);
+
+		int *d_scan=(int*)malloc(sizeof(int)*Bsize);
+		if(d_scan==NULL)
+			assert(false); // insufficient mem
+
+		int finalSize=PrefixSum(d_scan,pred,Bsize);
+
+		moveElemSerial(BAddr,SAddr,d_scan,pred,Bsize);
+		//		moveElemShM<<<grid_size,blk_size,sizeof(VoxBucketItem<Ktype>)*blk_size>>>(BAddr,SAddr,d_scan,pred,Bsize);
+
+		Ssize=finalSize;
+		Bsize=Bsize-Ssize;
+
+		free(pred);
+		free(d_scan);
+	}
+	__device__
+	void moveElemSerial(VoxBucketItem<Ktype>* oldAddr,VoxBucketItem<Ktype>* newAddr,
+			int* d_scan, int* d_pred,int size)
+	{
+		for(int i=0;i<size;i++)
+		{
+			int pos;
+			if(d_pred[i]==1)
+				pos=d_scan[i];
+			else if(d_pred[i]==0)
+				continue;
+			else
+				assert(false);
+			newAddr[pos].setVal(oldAddr[i].key,oldAddr[i].priority); // pos undefined, scan err
+		}
+	}
+	__device__
 	void moveItem(VoxBucketItem<Ktype>* oldAddr,VoxBucketItem<Ktype>* newAddr, int size)
 	{
 		// assume new is in front of old, or two array without overlap
@@ -414,6 +501,14 @@ struct ParBucketHeapBase
 	}
 	__device__
 	void DelDupOnBucket(int lv)
+	{
+				if(lv>=4)
+					DelDupOnBucketPar(lv);
+				else
+		DelDupOnBucketSerail(lv);
+	}
+	__device__
+	void DelDupOnBucketSerail(int lv)
 	{
 		// identify, delete, compress--- scan and prefix sum
 
@@ -464,28 +559,15 @@ struct ParBucketHeapBase
 		int finalSize=PrefixSum(d_scan,pred,szBi);
 
 		//		moveElemInplace<int><<<grid_size,blk_size>>>(Bi,d_scan,pred,szBi);
-		moveElemSerial(Bi,d_scan,pred,szBi);
-
+		moveElemSerial(Bi,Bi,d_scan,pred,szBi);
+		//		moveElemShM<<<grid_size,blk_size,sizeof(VoxBucketItem<Ktype>)*blk_size>>>
+		//				(Bi,Bi,d_scan,pred,szBi);
 
 		d_active_buckets[lv]=finalSize;
 		free(pred);
 		free(d_scan);
 	}
-	__device__
-	void moveElemSerial(VoxBucketItem<Ktype>* Bi, int* d_scan, int* d_pred, int numElems)
-	{
-		for(int i=0;i<numElems;i++)
-		{
-			int pos;
-			if(d_pred[i]==1)
-				pos=d_scan[i];
-			else if(d_pred[i]==0)
-				continue;
-			else
-				assert(false);
-			Bi[pos].setVal(Bi[i].key,Bi[i].priority); // pos undefined, scan err
-		}
-	}
+
 	__device__
 	void clearS(VoxBucketItem<Ktype> *Si,int &szSi)
 	{
@@ -545,7 +627,28 @@ struct ParBucketHeapBase
 	{
 
 	}
-
+	// for wavefront init
+	__device__
+	void fillZero(VoxBucketItem<Ktype>* initArr, int size)
+	{
+		int bucLV=0;
+		int bucId=0;
+		VoxBucketItem<Ktype>* Bi= getBucItem(0,0);
+		for(int i=0;i<size;i++)
+		{
+			Bi[bucId].setVal(initArr[i].key,0);
+			bucId++;
+			d_active_buckets[bucLV]=bucId;
+			if(bucId>=d_max_buckets[bucLV])
+			{
+				bucLV++;
+				bucId=0;
+				Bi= getBucItem(bucLV,0);
+				*q=bucLV;
+				printD(bucLV);
+			}
+		}
+	}
 	__device__
 	int smallerPonBucket(int lv,int maxP)
 	{
@@ -680,20 +783,22 @@ public:
 	typename vector_type<int,memspace>::type dbg_shared;
 
 	ParBucketHeap(int n_,int d_=1):nodes(n_),bulkSize(d_),activeLvs(-1),activeLVs_shared(1),
-			max_levels(log(n_/d_)/log(4)+2),
-			parent_type(n_,max_levels,d_),locks_shared(max_levels),
-			times_shared(max_levels),priorities_shared(max_levels),
-			sigSizes_shared(max_levels),bucSizes_shared(max_levels),
-			maxSigSizes_shared(max_levels),maxBucSizes_shared(max_levels),
-			sigOffsets_shared(max_levels),bucOffsets_shared(max_levels),
-			dbg_shared(max_levels)
+			max_levels(ceil(log(n_/d_)/log(4))),
+			parent_type(n_,d_),locks_shared(max_levels+1),
+			times_shared(max_levels+1),priorities_shared(max_levels+1),
+			sigSizes_shared(max_levels+1),bucSizes_shared(max_levels+1),
+			maxSigSizes_shared(max_levels+1),maxBucSizes_shared(max_levels+1),
+			sigOffsets_shared(max_levels+1),bucOffsets_shared(max_levels+1),
+			dbg_shared(max_levels+1)
 	{
+		//		parent_type.maxLV=max_levels;
 		// consider use thrust::prefixsum..
 		thrust::fill(locks_shared.begin(),locks_shared.end(),0);
 		thrust::fill(times_shared.begin(),times_shared.end(),0);
 		thrust::fill(priorities_shared.begin(),priorities_shared.end(),0);
 		thrust::fill(sigSizes_shared.begin(),sigSizes_shared.end(),0);
 		thrust::fill(bucSizes_shared.begin(),bucSizes_shared.end(),0);
+		thrust::fill(dbg_shared.begin(),dbg_shared.end(),0);
 
 		sigOffsets_shared[0]=0;
 		bucOffsets_shared[0]=2;
@@ -736,6 +841,15 @@ public:
 	int getBucLoc(int lv, int id)
 	{
 		return bucOffsets_shared[lv]+id;
+	}
+	void resetParam()
+	{
+		activeLVs_shared[0]=-1;
+		thrust::fill(locks_shared.begin(),locks_shared.begin()+max_levels,0);
+		thrust::fill(times_shared.begin(),times_shared.begin()+max_levels,0);
+		thrust::fill(priorities_shared.begin(),priorities_shared.begin()+max_levels,0);
+		thrust::fill(sigSizes_shared.begin(),sigSizes_shared.begin()+max_levels,0);
+		thrust::fill(bucSizes_shared.begin(),bucSizes_shared.begin()+max_levels,0);
 	}
 	void printAllItems()
 	{

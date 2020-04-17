@@ -57,8 +57,6 @@ include CMakeFiles/test_bucket.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/test_bucket.dir/flags.make
 
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: ../include/BucketHeap.h
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: ../include/BucketSignal.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: ../include/MinHeap.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: ../include/atomicLock.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: ../include/cuda_utils.h
@@ -88,7 +86,6 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/concept_check.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/cpp_type_traits.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/cxxabi_forced.h
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/deque.tcc
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/exception_defines.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/exception_ptr.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/fstream.tcc
@@ -97,7 +94,6 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/hash_bytes.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/ios_base.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/istream.tcc
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/list.tcc
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/locale_classes.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/locale_classes.tcc
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/locale_facets.h
@@ -108,6 +104,7 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/nested_exception.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/ostream.tcc
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/ostream_insert.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/parse_numbers.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/postypes.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/predefined_ops.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/ptr_traits.h
@@ -118,15 +115,11 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_algobase.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_bvector.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_construct.h
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_deque.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_function.h
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_heap.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_iterator.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_iterator_base_funcs.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_iterator_base_types.h
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_list.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_pair.h
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_queue.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_raw_storage_iter.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_relops.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/bits/stl_tempbuf.h
@@ -143,6 +136,7 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cctype
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cerrno
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cfloat
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/chrono
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/clocale
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cmath
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cstddef
@@ -150,10 +144,10 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cstdio
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cstdlib
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cstring
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/ctime
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cwchar
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/cwctype
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/debug/debug.h
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/deque
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/exception
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/ext/aligned_buffer.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/ext/alloc_traits.h
@@ -172,11 +166,10 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/istream
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/iterator
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/limits
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/list
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/memory
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/new
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/ostream
-CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/queue
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/ratio
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/stdexcept
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/streambuf
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/c++/5/string
@@ -221,16 +214,23 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/math-vector.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/mathinline.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/nan.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/sched.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/select.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/select2.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/setjmp.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/stdio.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/stdio2.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/stdlib.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/string3.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/time.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/timex.h
@@ -239,6 +239,7 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/wchar.h
+CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/wchar2.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/wordsize.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/bits/xopen_lim.h
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: /usr/include/x86_64-linux-gnu/c++/5/bits/atomic_word.h
@@ -850,11 +851,11 @@ CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: C
 CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o: ../src/parbucket/parbucket.cu
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building NVCC (Device) object CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o"
 	cd /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket && /usr/bin/cmake -E make_directory /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/.
-	cd /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket && /usr/bin/cmake -D verbose:BOOL=ON -D build_configuration:STRING=Debug -D generated_file:STRING=/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/./test_bucket_generated_parbucket.cu.o -D generated_cubin_file:STRING=/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/./test_bucket_generated_parbucket.cu.o.cubin.txt -P /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o.cmake
+	cd /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket && /usr/bin/cmake -D verbose:BOOL=ON -D build_configuration:STRING=Release -D generated_file:STRING=/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/./test_bucket_generated_parbucket.cu.o -D generated_cubin_file:STRING=/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/./test_bucket_generated_parbucket.cu.o.cubin.txt -P /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o.cmake
 
 CMakeFiles/test_bucket.dir/test_bucket_intermediate_link.o: CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building NVCC intermediate link file CMakeFiles/test_bucket.dir/test_bucket_intermediate_link.o"
-	/usr/local/cuda-9.0/bin/nvcc -g -G -arch=sm_61 -ftz=true -rdc=true -std=c++11 -m64 -ccbin /usr/bin/cc -dlink /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/./test_bucket_generated_parbucket.cu.o -o /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/./test_bucket_intermediate_link.o
+	/usr/local/cuda-9.0/bin/nvcc -arch=sm_61 -O3 -use_fast_math -ftz=true -prec-div=false -prec-sqrt=false -rdc=true -std=c++11 -m64 -ccbin /usr/bin/cc -dlink /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/parbucket/./test_bucket_generated_parbucket.cu.o -o /home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/./test_bucket_intermediate_link.o
 
 CMakeFiles/test_bucket.dir/src/DijkstraShortestPath/mainBucketHeap.cpp.o: CMakeFiles/test_bucket.dir/flags.make
 CMakeFiles/test_bucket.dir/src/DijkstraShortestPath/mainBucketHeap.cpp.o: ../src/DijkstraShortestPath/mainBucketHeap.cpp

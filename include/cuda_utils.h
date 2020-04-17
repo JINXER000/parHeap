@@ -141,7 +141,17 @@ __global__ void ExclusiveScan(int  *d_out, const int* d_in, size_t input_size, i
 
 }
 
-
+__device__
+int serailScan(int* out,int* pred, int size)
+{
+	int acc=0;
+	for(int i=0;i<size;i++)
+	{
+		out[i]=acc;
+		acc=acc+pred[i];
+	}
+	return acc;
+}
 __device__
 int PrefixSum(int* d_scan, int *d_pred, int numElems)
 {
@@ -151,9 +161,6 @@ int PrefixSum(int* d_scan, int *d_pred, int numElems)
 	if(d_blk_offsets==NULL)
 		assert(false); // insufficient mem
 
-	int test1=d_scan[0];
-	int test2=d_pred[0];
-	int test3=d_blk_offsets[0];
 	ExclusiveScan<<<num_double_blocks,block_size,2*block_size*sizeof(int)>>>
 			(d_scan,d_pred,numElems,d_blk_offsets);
 	// without this, parent cannot see the operation made by child
@@ -165,7 +172,9 @@ int PrefixSum(int* d_scan, int *d_pred, int numElems)
 		int* d_scan_temp=(int*)malloc(sizeof(int)*num_double_blocks);
 		if(d_scan_temp==NULL)
 			assert(false); // insufficient mem
-		finalSum=PrefixSum(d_scan_temp,d_blk_offsets,num_double_blocks);
+/// can not recurse in dynamic parallelism...
+		finalSum=serailScan(d_scan_temp,d_blk_offsets,num_double_blocks);
+//		finalSum=PrefixSum(d_scan_temp,d_blk_offsets,num_double_blocks);
 
 		adjustInc<<<num_double_blocks,block_size>>>(d_scan,d_scan_temp,numElems);
 		cudaDeviceSynchronize();
