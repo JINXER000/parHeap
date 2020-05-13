@@ -4,41 +4,6 @@
 
 
 namespace parheap{
-template <class Ktype>
-__global__
-void BH_insertTest(ParBucketHeap<Ktype> bh,
-		VoxBucketItem<Ktype>* eInVec,
-		VoxBucketItem<Ktype>* eOutVec,
-		int vec_num,bool *finished)
-{
-	const int level=blockIdx.x;
-	const int thid=threadIdx.x;
-
-	// assume push and pop vec_num elems
-	if(level==0)
-	{
-		for(int i=0;i<vec_num;i++)
-		{
-			bh.updateRes(eInVec[i]);
-		}
-		for(int i=0;i<vec_num;i++)
-		{
-			bh.extractMinRes(eOutVec[i]);
-		}
-//		bh.fillZero(eInVec,vec_num);
-		*finished=true;
-	}else
-	{
-		do
-		{
-			int isFail3=0;
-			//resolve
-			isFail3=bh.Resolve(level);  // can fail because !metConstrain
-
-		}while(!*finished);
-
-	}
-}
 
 template <class Ktype>
 __global__
@@ -128,59 +93,6 @@ void BH_iter(ParBucketHeap<Ktype> bh,
 }
 
 
-template <class Ktype>
-__global__
-void BH_insertSerail(ParBucketHeap<Ktype> bh,
-		VoxBucketItem<Ktype>* eInPtr,
-		int* test_vec)
-{
-
-
-	// do update
-
-
-	int isFail=bh.update(*eInPtr);
-	//resolve
-	for (int level=0;level<bh.max_levels;level++)
-	{
-		if(!bh.metConstrain(level))
-		{
-			continue;
-		}
-		bh.ResSerial(level);
-	}
-
-
-}
-
-template <class Ktype>
-__global__
-void BH_extractSerail(ParBucketHeap<Ktype> bh,
-		int* miniElem)
-{
-
-
-	// do update
-
-	VoxBucketItem<Ktype> eout;
-	int isFail=bh.extractMin(eout);
-
-	//resolve
-	for (int level=0;level<bh.max_levels;level++)
-	{
-		if(!bh.metConstrain(level))
-		{
-			continue;
-		}
-		bh.ResSerial(level);
-	}
-	*miniElem=eout.key;
-
-
-}
-
-
-
 
 int parDijkstra(std::vector<int> &srcNode,
 		Graph<AdjacentNode> &cuGraph,
@@ -212,63 +124,6 @@ int parDijkstra(std::vector<int> &srcNode,
 	thrust::copy(cuGraph.edgesSize.begin(),cuGraph.edgesSize.end(),d_edgesSize.begin());
 
 	thrust::device_vector<bool> d_settled(cuGraph.numVertices);
-
-	// INIT BUCKET HEAP
-//	int nodes=inputSize;
-//	BucketHeap* bucketHeap = new BucketHeap();
-//	std::cout<<"input sources has "<<inputSize<<std::endl;
-//
-//	ParBucketHeap<int> bh(nodes+2,1);
-//	int block_size=1;
-//	int grid_size=bh.max_levels;
-
-	/// SERIAL TEST
-//		thrust::device_vector<int> d_test_vec(inputSize);
-//			for(int i=0;i<inputSize;i++)
-//			{
-//
-//
-//				BH_insertSerail<int><<<1,1>>>(bh,
-//						raw_pointer_cast(&d_srcNode[i]),
-//						raw_pointer_cast(&d_test_vec[0]));
-//
-//								bh.printAllItems();
-//				//	    bucketHeap->update(h_srcNode[i].key,h_srcNode[i].priority);
-//				//	    bucketHeap->printBucketCPU();
-//			}
-//
-//			for(int i=0;i<inputSize;i++)
-//			{
-//				BH_extractSerail<int><<<1,1>>>(bh,
-//						raw_pointer_cast(&d_test_vec[i]));
-//
-//				bh.printAllItems();
-//				int out=d_test_vec[i];
-//				printf("extracted min is %d \n",out);
-//				int B0Size=bh.bucSizes_shared[0];
-//				if(B0Size==0)
-//					break;
-//			}
-
-	///// MUTEX TEST
-//		thrust::device_vector<VoxBucketItem<int>> d_outNodes(inputSize);
-//		bool *finished;
-//		CUDA_ALLOC_DEV_MEM(&finished,sizeof(int));
-//		CUDA_DEV_MEMSET(finished,0,sizeof(int));
-//		BH_insertTest<int><<<grid_size,block_size>>>(bh,
-//				raw_pointer_cast(&d_srcNode[0]),
-//				raw_pointer_cast(&d_outNodes[0]),
-//				nodes,finished);
-//		CUDA_FREE_DEV_MEM(finished);
-//
-//		bh.printAllItems();
-//
-//		for(int i=0;i<inputSize;i++)
-//		{
-//			VoxBucketItem<int> item=d_outNodes[i];
-//			std::cout<<"("<<item.key<<", "<<item.priority<<")";
-//		}
-
 
 
 	///// Pardjikstra

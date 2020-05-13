@@ -11,7 +11,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.5.1/CMakeCCompiler.cmake"
   "CMakeFiles/3.5.1/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.5.1/CMakeSystem.cmake"
-  "CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o.depend"
+  "CMakeFiles/test_bucket.dir/src/test_bucket_generated_parbucket.cu.o.depend"
   "/opt/ros/kinetic/share/OpenCV-3.3.1-dev/OpenCVConfig-version.cmake"
   "/opt/ros/kinetic/share/OpenCV-3.3.1-dev/OpenCVConfig.cmake"
   "/opt/ros/kinetic/share/OpenCV-3.3.1-dev/OpenCVModules-release.cmake"
@@ -50,7 +50,7 @@ set(CMAKE_MAKEFILE_OUTPUTS
 
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
-  "CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o.cmake"
+  "CMakeFiles/test_bucket.dir/src/test_bucket_generated_parbucket.cu.o.cmake"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 

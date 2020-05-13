@@ -123,140 +123,32 @@ test_bucket/fast:
 	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/build
 .PHONY : test_bucket/fast
 
-src/BucketHeap.o: src/BucketHeap.cpp.o
+src/mainBucketHeap.o: src/mainBucketHeap.cpp.o
 
-.PHONY : src/BucketHeap.o
-
-# target to build an object file
-src/BucketHeap.cpp.o:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/BucketHeap.cpp.o
-.PHONY : src/BucketHeap.cpp.o
-
-src/BucketHeap.i: src/BucketHeap.cpp.i
-
-.PHONY : src/BucketHeap.i
-
-# target to preprocess a source file
-src/BucketHeap.cpp.i:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/BucketHeap.cpp.i
-.PHONY : src/BucketHeap.cpp.i
-
-src/BucketHeap.s: src/BucketHeap.cpp.s
-
-.PHONY : src/BucketHeap.s
-
-# target to generate assembly for a file
-src/BucketHeap.cpp.s:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/BucketHeap.cpp.s
-.PHONY : src/BucketHeap.cpp.s
-
-src/BucketSignal.o: src/BucketSignal.cpp.o
-
-.PHONY : src/BucketSignal.o
+.PHONY : src/mainBucketHeap.o
 
 # target to build an object file
-src/BucketSignal.cpp.o:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/BucketSignal.cpp.o
-.PHONY : src/BucketSignal.cpp.o
+src/mainBucketHeap.cpp.o:
+	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/mainBucketHeap.cpp.o
+.PHONY : src/mainBucketHeap.cpp.o
 
-src/BucketSignal.i: src/BucketSignal.cpp.i
+src/mainBucketHeap.i: src/mainBucketHeap.cpp.i
 
-.PHONY : src/BucketSignal.i
-
-# target to preprocess a source file
-src/BucketSignal.cpp.i:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/BucketSignal.cpp.i
-.PHONY : src/BucketSignal.cpp.i
-
-src/BucketSignal.s: src/BucketSignal.cpp.s
-
-.PHONY : src/BucketSignal.s
-
-# target to generate assembly for a file
-src/BucketSignal.cpp.s:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/BucketSignal.cpp.s
-.PHONY : src/BucketSignal.cpp.s
-
-src/DijkstraShortestPath/mainBucketHeap.o: src/DijkstraShortestPath/mainBucketHeap.cpp.o
-
-.PHONY : src/DijkstraShortestPath/mainBucketHeap.o
-
-# target to build an object file
-src/DijkstraShortestPath/mainBucketHeap.cpp.o:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/DijkstraShortestPath/mainBucketHeap.cpp.o
-.PHONY : src/DijkstraShortestPath/mainBucketHeap.cpp.o
-
-src/DijkstraShortestPath/mainBucketHeap.i: src/DijkstraShortestPath/mainBucketHeap.cpp.i
-
-.PHONY : src/DijkstraShortestPath/mainBucketHeap.i
+.PHONY : src/mainBucketHeap.i
 
 # target to preprocess a source file
-src/DijkstraShortestPath/mainBucketHeap.cpp.i:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/DijkstraShortestPath/mainBucketHeap.cpp.i
-.PHONY : src/DijkstraShortestPath/mainBucketHeap.cpp.i
+src/mainBucketHeap.cpp.i:
+	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/mainBucketHeap.cpp.i
+.PHONY : src/mainBucketHeap.cpp.i
 
-src/DijkstraShortestPath/mainBucketHeap.s: src/DijkstraShortestPath/mainBucketHeap.cpp.s
+src/mainBucketHeap.s: src/mainBucketHeap.cpp.s
 
-.PHONY : src/DijkstraShortestPath/mainBucketHeap.s
-
-# target to generate assembly for a file
-src/DijkstraShortestPath/mainBucketHeap.cpp.s:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/DijkstraShortestPath/mainBucketHeap.cpp.s
-.PHONY : src/DijkstraShortestPath/mainBucketHeap.cpp.s
-
-src/MinHeap.o: src/MinHeap.cpp.o
-
-.PHONY : src/MinHeap.o
-
-# target to build an object file
-src/MinHeap.cpp.o:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/MinHeap.cpp.o
-.PHONY : src/MinHeap.cpp.o
-
-src/MinHeap.i: src/MinHeap.cpp.i
-
-.PHONY : src/MinHeap.i
-
-# target to preprocess a source file
-src/MinHeap.cpp.i:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/MinHeap.cpp.i
-.PHONY : src/MinHeap.cpp.i
-
-src/MinHeap.s: src/MinHeap.cpp.s
-
-.PHONY : src/MinHeap.s
+.PHONY : src/mainBucketHeap.s
 
 # target to generate assembly for a file
-src/MinHeap.cpp.s:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/MinHeap.cpp.s
-.PHONY : src/MinHeap.cpp.s
-
-src/utils.o: src/utils.cpp.o
-
-.PHONY : src/utils.o
-
-# target to build an object file
-src/utils.cpp.o:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/utils.cpp.o
-.PHONY : src/utils.cpp.o
-
-src/utils.i: src/utils.cpp.i
-
-.PHONY : src/utils.i
-
-# target to preprocess a source file
-src/utils.cpp.i:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/utils.cpp.i
-.PHONY : src/utils.cpp.i
-
-src/utils.s: src/utils.cpp.s
-
-.PHONY : src/utils.s
-
-# target to generate assembly for a file
-src/utils.cpp.s:
-	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/utils.cpp.s
-.PHONY : src/utils.cpp.s
+src/mainBucketHeap.cpp.s:
+	$(MAKE) -f CMakeFiles/test_bucket.dir/build.make CMakeFiles/test_bucket.dir/src/mainBucketHeap.cpp.s
+.PHONY : src/mainBucketHeap.cpp.s
 
 # Help Target
 help:
@@ -267,21 +159,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... test_bucket"
-	@echo "... src/BucketHeap.o"
-	@echo "... src/BucketHeap.i"
-	@echo "... src/BucketHeap.s"
-	@echo "... src/BucketSignal.o"
-	@echo "... src/BucketSignal.i"
-	@echo "... src/BucketSignal.s"
-	@echo "... src/DijkstraShortestPath/mainBucketHeap.o"
-	@echo "... src/DijkstraShortestPath/mainBucketHeap.i"
-	@echo "... src/DijkstraShortestPath/mainBucketHeap.s"
-	@echo "... src/MinHeap.o"
-	@echo "... src/MinHeap.i"
-	@echo "... src/MinHeap.s"
-	@echo "... src/utils.o"
-	@echo "... src/utils.i"
-	@echo "... src/utils.s"
+	@echo "... src/mainBucketHeap.o"
+	@echo "... src/mainBucketHeap.i"
+	@echo "... src/mainBucketHeap.s"
 .PHONY : help
 
 

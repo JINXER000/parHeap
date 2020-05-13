@@ -5,8 +5,6 @@
 #include <fstream>
 
 
-#include "BucketHeap.h"
-#include "BucketSignal.h"
 #include "utils.h"
 #include "bucketedqueue.h"
 #include "parDjikstra.h"
@@ -25,7 +23,6 @@ int main(){
 	string inputFileName;
 	bool nonDirectedGraph = false;
 
-	struct BucketItem currentVertex;
 	int startVertex = 56, destination = 340;
 	int numVertices,numEdges;
 		int total_rounds=0;
@@ -37,20 +34,9 @@ int main(){
 		throw std::runtime_error( "\nAn initialization error happened.\nExiting." );
 	}
 
-	//version2
-	//    std::vector<initial_vertex> parsedGraph( 0 );
-	//    numEdges = parse_graph(
-	//            inputFile,		// Input file.
-	//            parsedGraph,	// The parsed graph.
-	//            startVertex,
-	//            nonDirectedGraph );		// Arbitrary user-provided parameter.
-	//
-	//    numVertices= parsedGraph.size();
 
 
 
-
-	// version 1
 	//     if the first line of input file specifies num of vertices and edges
 	std::string line;
 	char delim[3] = " \t";	//In most benchmarks, the delimiter is usually the space character or the tab character.
@@ -96,44 +82,7 @@ int main(){
 #ifndef USE_GPU
 	BucketHeap* bucketHeap = new BucketHeap();
 	auto start = high_resolution_clock::now();
-//	for (int i = 0 ; i < numVertices ; i++) {
-//		if (i == startVertex){
-//			bucketHeap->update(i, 0);
-//			distance[i] = 0;
-//		} else {
-//			bucketHeap->update(i, INT_MAX-1);
-//			distance[i] = INT_MAX-1;
-//		}
-//		total_rounds++;
-//	}
-//
-//	while (!bucketHeap->isEmpty()) {
-//		currentVertex = bucketHeap->deleteMin();
-//		total_rounds++;
-//		if (currentVertex.key == destination) break;
-//		// version 1
-//		for (struct AdjacentNode n : adjList[currentVertex.key]) {
-//			if (distance[n.terminalVertex] > currentVertex.priority + n.weight) {
-//				distance[n.terminalVertex] = currentVertex.priority + n.weight;
-//				bucketHeap->update(n.terminalVertex, distance[n.terminalVertex]);
-//			}
-//		}
-//		//		bucketHeap->printBucketCPU();
-//		// version 2
-//		//        for(struct neighbor n: parsedGraph.at(currentVertex.key).nbrs)
-//		//        {
-//		//            if(distance[n.dstIndex]>currentVertex.priority+n.weight)
-//		//            {
-//		//                distance[n.dstIndex]=currentVertex.priority+n.weight;
-//		//                bucketHeap->update(n.dstIndex, distance[n.dstIndex]);
-//		//            }
-//		//        }
-//	}
-//	cout << distance[destination] << endl;
 
-
-
-	// another implementation
 	BucketPrioQueue<int> open;
 	for (int i = 0 ; i < numVertices ; i++) {
 		if (i == startVertex){
@@ -185,14 +134,7 @@ int main(){
 			distance[i] = INT_MAX-1;
 		}
 	}
-//		int inputSize=78;
-//		for(int i=0;i<inputSize;i++)
-//			{
-//			if(i>5&&i<10)
-//				srcNode.push_back(0);
-//			else
-//				srcNode.push_back(i+1);
-//		}
+
 	auto start = high_resolution_clock::now();
 	parheap::parDijkstra(srcNode,cuGraph,distance,destination);
 

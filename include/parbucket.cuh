@@ -2,7 +2,6 @@
 
 #include <utils.h>
 #include <cuda_utils.h>
-#include <MinHeap.h>
 #include "atomicLock.h"
 
 

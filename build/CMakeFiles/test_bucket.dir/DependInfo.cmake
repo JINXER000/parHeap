@@ -4,11 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/src/BucketHeap.cpp" "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/BucketHeap.cpp.o"
-  "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/src/BucketSignal.cpp" "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/BucketSignal.cpp.o"
-  "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/src/DijkstraShortestPath/mainBucketHeap.cpp" "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/DijkstraShortestPath/mainBucketHeap.cpp.o"
-  "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/src/MinHeap.cpp" "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/MinHeap.cpp.o"
-  "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/src/utils.cpp" "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/utils.cpp.o"
+  "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/src/mainBucketHeap.cpp" "/home/yzchen/CODE/UAV/EDT_DOCS/parbucket/parbucket/build/CMakeFiles/test_bucket.dir/src/mainBucketHeap.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
@@ -16,7 +12,6 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "/usr/include/eigen3"
   ".././include"
-  ".././src/DijkstraShortestPath"
   "/usr/local/cuda-9.0/include"
   "/opt/ros/kinetic/include/opencv-3.3.1-dev"
   "/opt/ros/kinetic/include/opencv-3.3.1-dev/opencv"

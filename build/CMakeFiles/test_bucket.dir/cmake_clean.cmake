@@ -1,11 +1,7 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/test_bucket.dir/src/parbucket/test_bucket_generated_parbucket.cu.o"
+  "CMakeFiles/test_bucket.dir/src/test_bucket_generated_parbucket.cu.o"
   "CMakeFiles/test_bucket.dir/test_bucket_intermediate_link.o"
-  "CMakeFiles/test_bucket.dir/src/DijkstraShortestPath/mainBucketHeap.cpp.o"
-  "CMakeFiles/test_bucket.dir/src/MinHeap.cpp.o"
-  "CMakeFiles/test_bucket.dir/src/BucketHeap.cpp.o"
-  "CMakeFiles/test_bucket.dir/src/BucketSignal.cpp.o"
-  "CMakeFiles/test_bucket.dir/src/utils.cpp.o"
+  "CMakeFiles/test_bucket.dir/src/mainBucketHeap.cpp.o"
   "test_bucket.pdb"
   "test_bucket"
 )
